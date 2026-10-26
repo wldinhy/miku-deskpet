@@ -1,0 +1,23 @@
+{
+  "name": "miku-deskpet",
+  "version": "1.0.0",
+  "description": "淡彩风初音未来桌宠：立绘动画、拖拽抛掷、唱歌甩葱、番茄钟、待办、提醒、猜拳、运势……",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11"
+  },
+  "author": "wldinhy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wldinhy/miku-deskpet.git"
+  },
+  "keywords": [
+    "desktop-pet",
+    "electron",
+    "hatsune-miku"
+  ]
+}

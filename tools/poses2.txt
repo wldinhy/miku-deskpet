@@ -1,0 +1,3 @@
+back|seen directly from behind (back view), standing straight, arms relaxed slightly away from the body, the full length of both twin tails visible hanging down her back, matching the back view in Image 1
+walk1|side view facing to the LEFT (profile, like the side view in Image 1), walking mid-step with the left leg forward and right leg back, arms swinging gently, cheerful closed-mouth smile, twin tails flowing behind her
+walk2|side view facing to the LEFT (profile, like the side view in Image 1), walking mid-step with the right leg forward and left leg back, arms swinging gently, cheerful closed-mouth smile, twin tails flowing behind her
