@@ -4,7 +4,16 @@
 
 <p align="center"><img src="assets/gen/idle.png" height="300"> <img src="assets/gen/leek.png" height="300"> <img src="assets/gen/night.png" height="300"></p>
 
-## 运行
+## 安装
+
+到 [Releases](https://github.com/wldinhy/miku-deskpet/releases/latest) 下载（仅 Windows x64）：
+
+- **Miku-Deskpet-Setup-x.x.x.exe**：安装版，可自选安装位置，自动创建桌面和开始菜单快捷方式，可在系统“应用”里卸载。
+- **Miku-Deskpet-Portable-x.x.x.exe**：免安装版，双击即用。
+
+安装程序没有代码签名，第一次运行时 Windows 可能弹出“已保护你的电脑”，点 **更多信息 → 仍要运行** 即可。
+
+## 从源码运行
 
 需要 Node.js 18+。
 
@@ -13,7 +22,9 @@ npm install
 npm start
 ```
 
-装好依赖后，也可以双击 `启动桌宠.vbs` 直接启动（不弹命令行窗口）。国内网络可在 `.npmrc` 里使用 npmmirror 的 Electron 镜像（已配置）。
+装好依赖后，也可以双击 `启动桌宠.vbs` 直接启动（不弹命令行窗口）。`.npmrc` 已配置 npmmirror 的 Electron 镜像，国内网络也能顺利安装。
+
+自己打包安装程序：`npm run dist`，产物在 `dist/`。
 
 ## 互动
 

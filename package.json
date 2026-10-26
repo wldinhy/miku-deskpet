@@ -4,11 +4,13 @@
   "description": "淡彩风初音未来桌宠：立绘动画、拖拽抛掷、唱歌甩葱、番茄钟、待办、提醒、猜拳、运势……",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win"
   },
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.4.11"
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   },
   "author": "wldinhy",
   "repository": {
@@ -19,5 +21,57 @@
     "desktop-pet",
     "electron",
     "hatsune-miku"
-  ]
+  ],
+  "build": {
+    "appId": "com.miku.deskpet",
+    "productName": "Miku Deskpet",
+    "copyright": "Code MIT © 2026 wldinhy · Hatsune Miku © Crypton Future Media, INC.",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "style.css",
+      "js/**",
+      "assets/gen/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Miku 桌宠",
+      "uninstallDisplayName": "Miku 桌宠",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052",
+      "artifactName": "Miku-Deskpet-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "Miku-Deskpet-Portable-${version}.exe"
+    }
+  }
 }
