@@ -1,23 +1,41 @@
 // 角色渲染：用参考原图 / 生成的立绘作为精灵，WebGL 着色器做头发飘动与惯性
 (function () {
-  // h：角色可见高度相对“站立高度”的比例（坐姿更矮、举手更高、月夜图带月亮更大）
-  const DEFS = {
-    front: { src: 'assets/gen/idle.png', h: 1 },
-    side: { src: 'assets/gen/side.png', h: 1, profile: 1 },
-    back: { src: 'assets/gen/back.png', h: 0.99 },
-    night: { src: 'assets/gen/night.png', h: 1.35, foot: 0.88 },
-    wave: { gen: 1, h: 1.02 }, happy: { gen: 1, h: 1 }, pout: { gen: 1, h: 1 }, surprised: { gen: 1, h: 1.02 },
-    sing: { gen: 1, h: 1 }, leek: { gen: 1, h: 1.2 }, dance: { gen: 1, h: 1 }, stretch: { gen: 1, h: 1.1 },
-    shy: { gen: 1, h: 1 }, cheer: { gen: 1, h: 1.08 }, sad: { gen: 1, h: 0.98 }, dizzy: { gen: 1, h: 1 },
-    eat: { gen: 1, h: 1 }, drink: { gen: 1, h: 1 }, think: { gen: 1, h: 1 }, sit: { gen: 1, h: 0.72 },
-    sleep: { gen: 1, h: 0.7 }, held: { gen: 1, h: 1.05 }, walk1: { gen: 1, h: 1, profile: 1 },
+  // 皮肤：逻辑动作名 -> 立绘文件。h：可见高度相对“站立高度”的比例；profile：朝左的侧面图；foot：脚底在包围盒中的位置
+  const SKINS = {
+    classic: {
+      dir: 'assets/gen',
+      files: {
+        idle: { h: 1 }, side: { h: 1, profile: 1 }, back: { h: 0.99 }, night: { h: 1.35, foot: 0.88 },
+        wave: { h: 1.02 }, happy: {}, pout: {}, surprised: { h: 1.02 }, sing: {}, leek: { h: 1.2 }, dance: {},
+        stretch: { h: 1.1 }, shy: {}, cheer: { h: 1.08 }, sad: { h: 0.98 }, dizzy: {}, eat: {}, drink: {}, think: {},
+        sit: { h: 0.72 }, sleep: { h: 0.7 }, held: { h: 1.05 }, walk1: { h: 1, profile: 1 },
+      },
+      map: { front: 'idle', transform: 'cheer', magic: 'wave', retry: 'think' },
+    },
+    rinne: {
+      dir: 'assets/skins/rinne',
+      files: {
+        u_idle: {}, u_side: { profile: 1 }, u_back: {}, u_walk: { profile: 1 }, u_wave: { h: 1.02 }, u_happy: {},
+        u_pout: {}, u_surprised: { h: 1.02 }, u_shy: {}, u_sad: { h: 0.98 }, u_think: {}, u_sit: { h: 0.72 },
+        u_sleep: { h: 0.7 }, u_held: { h: 1.05 }, u_dizzy: {}, u_eat: {}, u_drink: {}, u_stretch: { h: 1.1 },
+        m_idle: { h: 1.08 }, m_transform: { h: 1.08 }, m_magic: { h: 1.02 }, m_retry: { h: 1.02 }, m_cheer: { h: 1.12 },
+        m_walk: { profile: 1 }, m_wave: { h: 1.12 }, m_dance: { h: 1.06 }, m_sing: {}, m_held: { h: 1.08 },
+        m_night: { h: 1.35, foot: 0.88 },
+      },
+      // 形态 u = 制服，m = 魔法少女；找不到时依次退回制服版、待机图
+      forms: {
+        u: { front: 'u_idle', side: 'u_side', back: 'u_back', walk1: 'u_walk', wave: 'u_wave', happy: 'u_happy', pout: 'u_pout',
+          surprised: 'u_surprised', shy: 'u_shy', sad: 'u_sad', think: 'u_think', sit: 'u_sit', sleep: 'u_sleep',
+          held: 'u_held', dizzy: 'u_dizzy', eat: 'u_eat', drink: 'u_drink', stretch: 'u_stretch', night: 'm_night',
+          cheer: 'm_cheer', sing: 'm_sing', dance: 'm_dance', leek: 'm_magic', transform: 'm_transform', magic: 'm_magic', retry: 'm_retry' },
+        m: { front: 'm_idle', side: 'm_walk', back: 'm_transform', walk1: 'm_walk', wave: 'm_wave', happy: 'm_cheer',
+          held: 'm_held', stretch: 'm_cheer', think: 'm_retry' },
+      },
+    },
   };
-  // 生成图缺失时的替代
-  const FALLBACK = {
-    wave: 'front', happy: 'front', pout: 'front', surprised: 'front', sing: 'front', leek: 'front', dance: 'front',
-    stretch: 'front', shy: 'front', cheer: 'front', sad: 'front', dizzy: 'front', eat: 'front', drink: 'front',
-    think: 'front', sit: 'front', sleep: 'front', held: 'front', walk1: 'side',
-  };
+  const STANDING = ['idle', 'back', 'wave', 'happy', 'pout', 'surprised', 'shy', 'sad', 'think', 'eat', 'drink', 'sing'];
+  let skin = 'classic', form = 'u', onFormSwap = null;
+
   // 正面图的五官位置（像素坐标），用于眨眼 / 说话叠层；没有标定的图就不做叠层
   const FACES = {
     'assets/gen/idle.png': { eyeL: [442, 333], eyeR: [600, 337], mouth: [518, 397], k: 1.95 },
@@ -98,28 +116,34 @@
     return Object.assign({}, base, { img: c, tex: null });
   }
 
-  async function load(onProgress) {
-    const names = Object.keys(DEFS);
-    let done = 0;
-    await Promise.all(names.map(async (n) => {
-      const d = DEFS[n];
-      let src = d.src || `assets/gen/${n}.png`, img = await loadImg(src);
-      if (!img && d.alt) { src = d.alt; img = await loadImg(src); }
-      if (img) S[n] = Object.assign(analyze(img, n), { def: d, src });
-      onProgress && onProgress(++done / names.length);
+  const loaded = {};
+  function load(name = skin) {
+    if (loaded[name]) return loaded[name];
+    const K = SKINS[name];
+    loaded[name] = Promise.all(Object.keys(K.files).map(async (f) => {
+      const src = `${K.dir}/${f}.png`, img = await loadImg(src);
+      if (!img) return;
+      const def = K.files[f], key = `${name}/${f}`, base = f.replace(/^[um]_/, '');
+      S[key] = Object.assign(analyze(img, key), { def, src, form: f[1] === '_' ? f[0] : '', standing: STANDING.includes(base) });
+      S[key].scale = (def.h || 1) / (S[key].bb.y1 - S[key].bb.y0);
+      if (FACES[src]) {
+        S[key + '_blink'] = Object.assign(faceVariant(S[key], 'blink'), { scale: S[key].scale });
+        S[key + '_talk'] = Object.assign(faceVariant(S[key], 'talk'), { scale: S[key].scale });
+      }
     }));
-    if (S.front && FACES[S.front.src]) {
-      S.front_blink = Object.assign(faceVariant(S.front, 'blink'), { def: DEFS.front });
-      S.front_talk = Object.assign(faceVariant(S.front, 'talk'), { def: DEFS.front });
-    }
-    // 统一比例：每张图按“可见高度 = 站立高度 × h”缩放
-    for (const n in S) {
-      const s = S[n];
-      s.scale = (s.def.h || 1) / (s.bb.y1 - s.bb.y0);
-    }
+    return loaded[name];
   }
-  const resolve = (n) => (S[n] ? n : S[FALLBACK[n]] ? FALLBACK[n] : 'front');
-  const has = (n) => !!S[n];
+  async function setSkin(name) { if (!SKINS[name]) return; await load(name); skin = name; }
+  function setForm(f) { form = f; }
+  // 逻辑动作名 -> 已加载的立绘键
+  function resolve(n) {
+    const K = SKINS[skin], ok = (f) => (f && S[`${skin}/${f}`] ? `${skin}/${f}` : null);
+    if (K.forms) {
+      return ok(K.forms[form] && K.forms[form][n]) || ok(K.forms.u[n]) || ok(form === 'm' ? 'm_idle' : 'u_idle') || ok('u_idle') || 'classic/idle';
+    }
+    return ok(K.map[n]) || ok(n) || ok('idle');
+  }
+  const has = (n) => resolve(n) !== null;
 
   // ---------- WebGL ----------
   const VS = `
@@ -132,7 +156,8 @@
     varying vec2 uv;
     uniform sampler2D tex;
     uniform vec4 bb;
-    uniform float t, alpha, sway, lag, warm, prof;
+    uniform float t, alpha, sway, lag, warm, prof, glitch;
+    float hash(float n) { return fract(sin(n) * 43758.5453); }
     void main() {
       vec2 q = (uv - bb.xy) / (bb.zw - bb.xy);
       float side = abs(q.x - 0.5);
@@ -141,8 +166,19 @@
                            : smoothstep(0.17, 0.44, side) * smoothstep(0.1, 0.65, q.y);
       float dx = w * (sway * sin(t * 1.6 + q.y * 5.0 + sign(q.x - 0.5) * 0.8) + lag * q.y * q.y);
       vec2 s = vec2(uv.x - dx * (bb.z - bb.x), uv.y);
+      // 故障：横向条带随机错位 + RGB 分离
+      if (glitch > 0.0) {
+        float band = floor(uv.y * 46.0), tick = floor(t * 22.0);
+        float on = step(0.62, hash(band * 7.13 + tick));
+        s.x += (hash(band * 3.7 + tick * 1.3) - 0.5) * 0.09 * glitch * on;
+      }
       if (s.x < 0.0 || s.x > 1.0 || s.y < 0.0 || s.y > 1.0) { gl_FragColor = vec4(0.0); return; }
       vec4 c = texture2D(tex, s);
+      if (glitch > 0.0) {
+        vec2 o = vec2(0.014 * glitch, 0.0);
+        vec4 cr = texture2D(tex, clamp(s + o, 0.0, 1.0)), cb = texture2D(tex, clamp(s - o, 0.0, 1.0));
+        c = vec4(cr.r, c.g, cb.b, max(c.a, max(cr.a, cb.a)));
+      }
       c.rgb = mix(c.rgb, c.rgb * vec3(1.02, 1.0, 0.97), warm);
       gl_FragColor = c * alpha;
     }`;
@@ -166,7 +202,7 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     // 横向多留一点边，头发外摆时不被裁掉
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-0.08, 0, 1.08, 0, -0.08, 1, 1.08, 1]), gl.STATIC_DRAW);
-    ['a', 'M', 'tex', 'bb', 't', 'alpha', 'sway', 'lag', 'warm', 'prof'].forEach((k) => {
+    ['a', 'M', 'tex', 'bb', 't', 'alpha', 'sway', 'lag', 'warm', 'prof', 'glitch'].forEach((k) => {
       loc[k] = k === 'a' ? gl.getAttribLocation(prog, k) : gl.getUniformLocation(prog, k);
     });
     gl.enableVertexAttribArray(loc.a);
@@ -252,17 +288,23 @@
     T += dt;
     hair.v += (0 - hair.x) * 0.09; hair.v *= 0.86; hair.x += hair.v;
     hair.x = Math.max(-0.12, Math.min(0.12, hair.x));
-    let name = resolve(st.sprite);
-    if (name === 'front' && st.talk) name = 'front_talk';
-    if (name === 'front' && st.blink) name = 'front_blink';
-    const base = name.replace(/_(blink|talk)$/, '');
+    const base = resolve(st.sprite);
+    let name = base;
+    if (st.talk && S[base + '_talk']) name = base + '_talk';
+    if (st.blink && S[base + '_blink']) name = base + '_blink';
+    if (!S[base]) return;
     if (!cur) cur = base;
-    if (base !== cur) { prev = cur; cur = base; fade = /^walk/.test(prev) && /^walk/.test(base) ? 1 : 0; }
+    if (base !== cur) {
+      if (onFormSwap && S[cur] && S[cur].form && S[base].form && S[cur].form !== S[base].form) onFormSwap(S[base].form);
+      prev = cur; cur = base;
+      fade = /walk/.test(prev) && /walk/.test(base) ? 1 : 0;
+    }
     fade = Math.min(1, fade + dt / 0.16);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform1f(loc.t, T);
-    if (prev && fade < 1) draw(S[prev], st, 1 - fade);
+    gl.uniform1f(loc.glitch, st.glitch || 0);
+    if (prev && fade < 1 && S[prev]) draw(S[prev], st, 1 - fade);
     const s = S[name] || S[cur];
     if (!s) return;
     const m = draw(s, st, prev && fade < 1 ? fade : 1);
@@ -285,7 +327,7 @@
     if (sample(s, p.x, p.y) < 60) return null;
     const qx = (p.x * s.w - s.bb.x0) / (s.bb.x1 - s.bb.x0), qy = (p.y * s.h - s.bb.y0) / (s.bb.y1 - s.bb.y0);
     const side = qx - 0.5, flip = last.st.flip < 0 ? -1 : 1;
-    const standing = ['front', 'back', 'wave', 'happy', 'pout', 'surprised', 'shy', 'sad', 'think', 'eat', 'drink', 'sing'].includes(s.name);
+    const standing = s.standing;
     if (qy < (standing ? 0.3 : 0.38) && Math.abs(side) < 0.3) return { part: 'head', qx, qy };
     if (standing && Math.abs(side) > 0.24 && qy > 0.2) return { part: 'tail', side: Math.sign(side) * flip, qx, qy };
     if (standing && qy > 0.76) return { part: 'legs', qx, qy };
@@ -301,10 +343,16 @@
   }
   function headTop() {
     if (!last) return at(0.5, 0);
-    const s = last.s, top = s.name === 'night' ? 0.12 : 0.01;
+    const s = last.s, top = s.def.foot ? 0.12 : 0.01;
     return at(0.5, top);
   }
   function setUnit(u) { unit = u; }
 
-  window.Chara = { load, mount, render, partAt, at, headTop, push, has, setUnit, resize, sprites: S, FACES };
+  window.Chara = {
+    load, setSkin, setForm, mount, render, partAt, at, headTop, push, has, setUnit, resize, sprites: S, FACES,
+    sprite: (n) => S[resolve(n)],
+    onFormSwap: (fn) => { onFormSwap = fn; },
+    get skin() { return skin; },
+    get form() { return form; },
+  };
 })();

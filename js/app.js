@@ -11,13 +11,15 @@
   // ---------- 存档 ----------
   const DEFAULTS = {
     scale: 1, opacity: 1, top: true, walk: true, gravity: true, sound: true, voice: true, hourly: true,
-    quiet: false, autoNight: false, night: false, launch: false, water: 45, sitRemind: 60, sleepAfter: 5,
+    quiet: false, autoNight: false, night: false, launch: false, water: 45, sitRemind: 60, sleepAfter: 5, skin: 'classic',
     pomoWork: 25, pomoBreak: 5,
   };
   const S = {
     settings: { ...DEFAULTS }, affection: 0, todos: [], reminders: [], fortune: null, pomo: null,
-    stats: { pats: 0, pokes: 0, throws: 0, songs: 0, feeds: 0, pomos: 0, rpsWin: 0, rpsLose: 0, rpsDraw: 0, first: Date.now(), lastDay: '' },
+    stats: { pats: 0, pokes: 0, throws: 0, songs: 0, feeds: 0, pomos: 0, rpsWin: 0, rpsLose: 0, rpsDraw: 0, retries: 0, first: Date.now(), lastDay: '' },
   };
+  // 台词：当前皮肤有专属台词就用专属的，否则沿用经典台词
+  const L = new Proxy({}, { get: (_, k) => (S.settings.skin === 'rinne' && window.LINES_RINNE[k]) || LINES[k] || [] });
   let saveT = null;
   function save() {
     clearTimeout(saveT);
@@ -101,6 +103,20 @@
     rps: { dur: 1.6, pose(p, t) { p.sprite = 'think'; p.y = -Math.abs(Math.sin(t * 9)) * (t < 0.9 ? 4 : 0); } },
     think: { dur: 3, pose(p, t) { p.sprite = 'think'; p.rot = Math.sin(t * 1.5) * 1.5; } },
     surprised: { dur: 1.2, fast: true, pose(p, t) { p.sprite = 'surprised'; p.y = t < 0.3 ? -8 * bell(t / 0.3) : 0; } },
+    transform: { dur: 1.8, fast: true, direct: ['sx'], pose(p, t) {
+      const u = t / 1.8;
+      p.sprite = 'transform'; p.y = -26 * bell(u); p.sx = 0.82 + 0.18 * Math.abs(Math.cos(t * 9)); p.sway = 0.04;
+    } },
+    magic: { dur: 2.2, pose(p, t, a) {
+      p.sprite = 'magic'; p.rot = Math.sin(t * 3) * 1.5; p.y = -Math.abs(Math.sin(t * 4)) * 2;
+      if (!a.fired && t > 0.35) { a.fired = 1; starShot(); }
+    } },
+    retry: { dur: 1.7, pose(p, t) {
+      p.sprite = 'retry';
+      p.glitch = t < 1.2 ? 0.35 + 0.65 * Math.abs(Math.sin(t * 9)) : Math.max(0, 1 - (t - 1.2) / 0.5);
+      p.rot = t < 1.2 ? Math.sin(t * 20) * 1.5 : 0;
+    } },
+    glitchBlip: { dur: 0.4, pose(p, t) { p.glitch = 0.8 * bell(t / 0.4); } },
     nod: { dur: 1.1, pose(p, t) { p.sprite = 'happy'; p.sy = 1 - Math.max(0, Math.sin(t * 11)) * 0.02; } },
   };
 
@@ -224,18 +240,18 @@
     if (action && action.name === 'pat') action.t = Math.min(action.t, 0.3);
     else play('pat');
     burst('heart', 2);
-    if (now() - lastSay > 2.5) say(pick(highAff() && Math.random() < 0.5 ? LINES.patHigh : LINES.pat));
+    if (now() - lastSay > 2.5) say(pick(highAff() && Math.random() < 0.5 ? L.patHigh : L.pat));
     S.stats.pats++; addAff(1, 'pat');
   }
-  function pokeCheek() { play('pokeCheek'); Snd.blip(2); say(pick(LINES.pokeCheek)); S.stats.pokes++; save(); }
-  function pokeBody() { play('pokeBody'); Snd.boing(); fx('bang', 0.72, 0.08); say(pick(LINES.pokeBody)); S.stats.pokes++; save(); }
-  function tickle() { play('tickle'); burst('spark', 3); say(pick(LINES.tickle)); addAff(1, 'tickle'); }
-  function tailPull(side) { play('tailPull', { side: side || 1 }); Snd.sad(); say(pick(LINES.tail)); addAff(-1, 'tail'); }
+  function pokeCheek() { play('pokeCheek'); Snd.blip(2); say(pick(L.pokeCheek)); S.stats.pokes++; save(); }
+  function pokeBody() { play('pokeBody'); Snd.boing(); fx('bang', 0.72, 0.08); say(pick(L.pokeBody)); S.stats.pokes++; save(); }
+  function tickle() { play('tickle'); burst('spark', 3); say(pick(L.tickle)); addAff(1, 'tickle'); }
+  function tailPull(side) { play('tailPull', { side: side || 1 }); Snd.sad(); say(pick(L.tail)); addAff(-1, 'tail'); }
   function sing() {
     stopAction();
     const r = Snd.play(pick(['sing1', 'sing2']));
-    play('sing', { dur: r.dur + 0.6, notes: r.notes, keepMusic: true, then: () => { say(pick(LINES.singEnd)); addAff(1); } });
-    say(pick(LINES.sing), { dur: 2.2 });
+    play('sing', { dur: r.dur + 0.6, notes: r.notes, keepMusic: true, then: () => { say(pick(L.singEnd)); addAff(1); } });
+    say(pick(L.sing), { dur: 2.2 });
     S.stats.songs++; save();
   }
   function musicAct(act, song, lines) {
@@ -252,33 +268,77 @@
   let feedLog = [];
   function feed() {
     feedLog = feedLog.filter((t) => Date.now() - t < 3600e3);
-    if (feedLog.length >= 6) { play('shy'); say(pick(LINES.feedFull)); return; }
+    if (feedLog.length >= 6) { play('shy'); say(pick(L.feedFull)); return; }
     feedLog.push(Date.now());
     play('eat', { then: () => burst('heart', 2) });
     burst('spark', 2);
-    say(pick(LINES.feed));
+    say(pick(L.feed));
     S.stats.feeds++; addAff(2);
   }
-  function goSleep() { stopAction(); setMode('sleep'); say(pick(LINES.sleep), { dur: 3 }); }
+  function goSleep() { stopAction(); setMode('sleep'); say(pick(L.sleep), { dur: 3 }); }
   function wakeUp(silent) {
     if (mode !== 'sleep') return;
     setMode(S.settings.night ? 'float' : 'idle');
-    if (!silent) { play('wake'); say(pick(LINES.wake)); }
+    if (!silent) { play('wake'); say(pick(L.wake)); }
   }
-  function sit() { stopAction(); setMode('sit'); say(pick(LINES.sit)); }
-  function standUp() { setMode(S.settings.night ? 'float' : 'idle'); play('jump'); say(pick(LINES.stand)); }
+  function sit() { stopAction(); setMode('sit'); say(pick(L.sit)); }
+  function standUp() { setMode(S.settings.night ? 'float' : 'idle'); play('jump'); say(pick(L.stand)); }
+
+  // ---------- 「即刻轮回」主题 ----------
+  let transformUntil = 0;
+  const rinne = () => S.settings.skin === 'rinne';
+  function flash() {
+    const f = $('#flash'), c = Chara.at(0.5, 0.45);
+    f.style.left = c.x + 'px'; f.style.top = c.y + 'px';
+    f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+  }
+  function starShot() {
+    Snd.sparkle();
+    for (let i = 0; i < 7; i++) setTimeout(() => fx('star', 0.5 + rand(-0.45, 0.45), 0.25 + rand(-0.15, 0.25)), i * 70);
+  }
+  function transform() {
+    stopAction();
+    if (!rinne()) { play('cheer'); burst('star', 4); Snd.fanfare(); return; }
+    if (Chara.form === 'm') { transformUntil = now() + 180; play('magic'); say(pick(L.magic)); return; }
+    play('transform');
+    Snd.transform();
+    say(pick(L.transform), { dur: 2.4 });
+    setTimeout(() => { Chara.setForm('m'); transformUntil = now() + 180; }, 750);
+    burst('spark', 4);
+  }
+  function untransform(silent) {
+    if (Chara.form !== 'm') return;
+    Chara.setForm('u');
+    transformUntil = 0;
+    if (!silent) { play('wave'); say(pick(L.untransform)); }
+  }
+  function retry(auto) {
+    stopAction();
+    if (mode === 'walk') api.send('stop-walk');
+    setMode(S.settings.night ? 'float' : 'idle');
+    play('retry');
+    Snd.rewind();
+    say(pick(auto ? L.retryAuto : L.retry), { dur: 2.6 });
+    setTimeout(() => api.send('rewind', { mode: auto ? 'drag' : 'time' }), 450);
+    S.stats.retries++; save();
+  }
+  Chara.onFormSwap(() => { flash(); burst('star', 4); });
 
   const ACT_FN = {
-    wave: () => { play('wave'); say(pick(LINES.wave)); },
+    transform: () => transform(),
+    untransform: () => untransform(),
+    magic: () => { play('magic'); say(pick(L.magic)); addAff(1, 'magic'); },
+    retry: () => retry(false),
+    wave: () => { play('wave'); say(pick(L.wave)); },
     sing, feed,
-    leek: () => musicAct('leek', 'polka', LINES.leek),
-    dance: () => musicAct('dance', 'dance', LINES.dance),
-    spin: () => { play('spin'); Snd.whoosh(); say(pick(LINES.spin)); },
+    leek: () => musicAct('leek', 'polka', L.leek),
+    dance: () => musicAct('dance', 'dance', L.dance),
+    spin: () => { play('spin'); Snd.whoosh(); say(pick(L.spin)); },
     jump: () => { play('jump'); Snd.boing(); },
-    stretch: () => { play('stretch'); say(pick(LINES.stretch)); },
+    stretch: () => { play('stretch'); say(pick(L.stretch)); },
     sit: () => sit(),
     sleep: () => goSleep(),
-    drink: () => { play('drink'); say(pick(LINES.drink)); addAff(1, 'drink'); },
+    drink: () => { play('drink'); say(pick(L.drink)); addAff(1, 'drink'); },
   };
   function doAct(id) {
     if (mode === 'held' || mode === 'thrown' || mode === 'fall') return;
@@ -296,11 +356,11 @@
     if (on) {
       if (mode === 'walk') api.send('stop-walk');
       if (['idle', 'sit', 'walk', 'sleep'].includes(mode)) setMode('float');
-      if (announce) { say(pick(LINES.night)); burst('star', 3); Snd.sparkle(); }
+      if (announce) { say(pick(L.night)); burst('star', 3); Snd.sparkle(); }
     } else {
       if (mode === 'float') setMode('idle');
       if (S.settings.gravity) api.send('fall');
-      if (announce) say(pick(LINES.day));
+      if (announce) say(pick(L.day));
     }
   }
   function buildStars() {
@@ -370,13 +430,13 @@
   document.addEventListener('dblclick', (e) => {
     const h = hitTest(e.clientX, e.clientY);
     if (!h || h.ui || mode === 'sleep' || mode === 'sit' || mode === 'float') return;
-    if (h.part === 'head' || h.part === 'body') { play('spin'); Snd.whoosh(); if (now() - lastSay > 1) say(pick(LINES.spin)); }
+    if (h.part === 'head' || h.part === 'body') { play('spin'); Snd.whoosh(); if (now() - lastSay > 1) say(pick(L.spin)); }
   });
   document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     const h = hitTest(e.clientX, e.clientY);
     if (h && !h.ui) {
-      api.send('menu-state', { pomo: Feat.pomoLabel() });
+      api.send('menu-state', { pomo: Feat.pomoLabel(), form: Chara.form });
       api.send('popup');
     }
   });
@@ -393,7 +453,7 @@
       return pat();
     }
     if (h.part === 'tail') return tailPull(h.side);
-    if (h.part === 'legs') { play('jump'); Snd.boing(); if (Math.random() < 0.5) say(pick(LINES.legs)); return; }
+    if (h.part === 'legs') { play('jump'); Snd.boing(); if (Math.random() < 0.5) say(pick(L.legs)); return; }
     pokeTimes = pokeTimes.filter((t) => now() - t < 2);
     pokeTimes.push(now());
     if (pokeTimes.length >= 4) { pokeTimes = []; return tickle(); }
@@ -408,14 +468,14 @@
     api.send('drag-start', { ox: down.cx, oy: down.cy });
     setMode('held');
     Snd.whoosh();
-    say(pick(LINES.held));
+    say(pick(L.held));
   }
 
   // ---------- 主进程事件 ----------
   let tick = null, lastActivity = now(), heldShakeSaid = false;
   api.on('tick', (d) => {
     if (tick && (d.cx !== tick.cx || d.cy !== tick.cy)) {
-      if (now() - lastActivity > 90 && (mode === 'idle' || mode === 'float') && !action) { play('wave'); say(pick(LINES.back)); }
+      if (now() - lastActivity > 90 && (mode === 'idle' || mode === 'float') && !action) { play('wave'); say(pick(L.back)); }
       lastActivity = now();
     }
     // 自己根据全局鼠标位置做命中判断：桌面在前台时系统不会转发鼠标移动事件
@@ -431,34 +491,36 @@
     sv.x = sv.x * 0.75 + d.dx * 0.25; sv.y = sv.y * 0.75 + d.dy * 0.25;
     if (mode === 'held') {
       shake = shake * 0.97 + Math.abs(sv.x - px) + Math.abs(sv.y - py);
-      if (shake > 70 && !heldShakeSaid) { heldShakeSaid = true; say(pick(LINES.shake)); }
+      if (shake > 70 && !heldShakeSaid) { heldShakeSaid = true; say(pick(L.shake)); }
     } else { shake *= 0.9; heldShakeSaid = false; }
     tick = d;
   });
-  api.on('thrown', () => { setMode('thrown'); say(pick(LINES.thrown)); S.stats.throws++; addAff(-1, 'throw'); });
-  api.on('falling', () => { setMode('fall'); if (Math.random() < 0.5) say(pick(LINES.floatDown)); });
-  api.on('flung', () => say(pick(LINES.flung)));
-  api.on('bump', (w) => { Snd.thud(); burst('star', 2); if (w !== 'floor' && now() - lastSay > 1.2) say(pick(LINES.bump)); });
+  api.on('thrown', () => { setMode('thrown'); say(pick(L.thrown)); S.stats.throws++; addAff(-1, 'throw'); });
+  api.on('falling', () => { setMode('fall'); if (Math.random() < 0.5) say(pick(L.floatDown)); });
+  api.on('flung', () => say(pick(L.flung)));
+  api.on('bump', (w) => { Snd.thud(); burst('star', 2); if (w !== 'floor' && now() - lastSay > 1.2) say(pick(L.bump)); });
   api.on('landed', (d) => {
     const shaken = shake > 60;
     setMode(S.settings.night ? 'float' : 'idle');
-    if (d.hard) { Snd.thud(); play('land', { then: 'dizzy' }); say(pick(LINES.dizzy), { dur: 3.5 }); }
-    else if (shaken) { play('dizzy'); say(pick(LINES.dizzy)); }
-    else if (!d.stay) { play('softLand'); if (Math.random() < 0.4) say(pick(LINES.land)); }
+    if (d.hard && rinne()) { Snd.thud(); play('land', { then: () => retry(true) }); }
+    else if (d.hard) { Snd.thud(); play('land', { then: 'dizzy' }); say(pick(L.dizzy), { dur: 3.5 }); }
+    else if (shaken) { play('dizzy'); say(pick(L.dizzy)); }
+    else if (!d.stay) { play('softLand'); if (Math.random() < 0.4) say(pick(L.land)); }
   });
   api.on('walk-end', (r) => {
     if (mode === 'walk') setMode(S.settings.night ? 'float' : 'idle');
     if (r === 'edge') walkDir = -walkDir;
   });
-  api.on('shown', () => { play('wave'); say(pick(LINES.back)); });
+  api.on('rewound', () => { play('softLand'); burst('spark', 3); });
+  api.on('shown', () => { play('wave'); say(pick(L.back)); });
   api.on('menu', ({ id, v }) => {
     Snd.unlock();
     if (id === 'act') doAct(v);
     else if (id === 'panel') { Feat.open(v); setIgnore(false); }
     else if (id === 'set') setSetting(v.key, v.val);
     else if (id === 'ground') { if (S.settings.night) setSetting('night', false); else api.send('fall'); }
-    else if (id === 'hide') { say(pick(LINES.hide), { dur: 1.6 }); play('wave'); setTimeout(() => api.send('hide', 600000), 1500); }
-    else if (id === 'quit') { say(pick(LINES.bye), { dur: 2 }); play('wave'); save(); setTimeout(() => api.send('quit'), 1600); }
+    else if (id === 'hide') { say(pick(L.hide), { dur: 1.6 }); play('wave'); setTimeout(() => api.send('hide', 600000), 1500); }
+    else if (id === 'quit') { say(pick(L.bye), { dur: 2 }); play('wave'); save(); setTimeout(() => api.send('quit'), 1600); }
   });
 
   // ---------- 设置 ----------
@@ -476,6 +538,7 @@
     if (changed === 'gravity' && s.gravity && !s.night) api.send('fall');
     if (changed === 'walk' && !s.walk && mode === 'walk') { api.send('stop-walk'); setMode('idle'); }
     if (changed === 'sound' && s.sound) Snd.pop();
+    if (changed === 'skin') applySkin(true);
   }
 
   // ---------- 自主行为 ----------
@@ -499,7 +562,7 @@
       zzzT -= dt;
       if (zzzT <= 0) { zzzT = 1.7; fx('z', 0.66 + rand(-0.03, 0.03), 0.22); }
       sleepTalkT -= dt;
-      if (sleepTalkT <= 0) { sleepTalkT = rand(50, 110); if (!S.settings.quiet) say(pick(LINES.sleepTalk), { dur: 3 }); }
+      if (sleepTalkT <= 0) { sleepTalkT = rand(50, 110); if (!S.settings.quiet) say(pick(L.sleepTalk), { dur: 3 }); }
       return;
     }
     if (['held', 'thrown', 'fall', 'walk'].includes(mode) || action) return;
@@ -508,12 +571,12 @@
     if (S.settings.sleepAfter && idleFor > S.settings.sleepAfter * 60 && !Feat.isOpen()) {
       lastActivity = t - S.settings.sleepAfter * 60 + 5;
       if (mode === 'float') setSetting('night', false);
-      say(pick(LINES.sleepy));
+      say(pick(L.sleepy));
       play('yawn', { then: goSleep });
       return;
     }
     if (hoverStart && t - hoverStart > 3.5 && t - lastShy > 25 && mode === 'idle') {
-      lastShy = t; play('shy'); say(pick(LINES.hover)); return;
+      lastShy = t; play('shy'); say(pick(L.hover)); return;
     }
     if (mode === 'sit' && t > sitUntil) { standUp(); return; }
 
@@ -527,19 +590,22 @@
     else if (mode === 'float') opts = [['chatNight', 1], ['hum', 1], ['walk', canWalk ? 1.6 : 0], ['nothing', 1.5]];
     else opts = [['walk', canWalk ? 3 : 0], ['lookAround', 2], ['chat', 2], ['hum', 1.2], ['stretch', 1], ['tilt', 1],
       ['sit', 0.8], ['wave', near ? 1.5 : 0], ['dance', 0.25], ['leek', 0.2], ['spin', 0.3], ['think', 0.6], ['nothing', 1.5]];
+    if (rinne() && mode === 'idle') opts.push(['magic', 0.6], ['glitchBlip', 0.5], ['transform', Chara.form === 'u' ? 0.25 : 0]);
     const c = weighted(opts);
     if (c === 'walk') {
       if (Math.random() < 0.35) walkDir = -walkDir;
       stopAction();
       api.send('walk', { dx: walkDir * rand(120, 420) * sc, speed: (S.settings.night ? 0.8 : 1.1) * sc });
       setMode('walk');
-    } else if (c === 'chat') say(pick(highAff() && Math.random() < 0.3 ? LINES.chatterHigh : LINES.chatter), { chatter: true });
-    else if (c === 'chatNight') say(pick(LINES.night), { chatter: true });
+    } else if (c === 'chat') say(pick(highAff() && Math.random() < 0.3 ? L.chatterHigh : L.chatter), { chatter: true });
+    else if (c === 'chatNight') say(pick(L.night), { chatter: true });
     else if (c === 'hum') { if (S.settings.sound && !Feat.focusing()) hum(); else play('nod'); }
     else if (c === 'sit') sit();
-    else if (c === 'wave') { play('wave'); say(pick(LINES.wave), { chatter: true }); }
+    else if (c === 'wave') { play('wave'); say(pick(L.wave), { chatter: true }); }
     else if (c === 'dance' || c === 'leek') { if (!Feat.focusing() && !S.settings.quiet) doAct(c); }
     else if (c === 'spin') play('spin');
+    else if (c === 'magic') { play('magic'); say(pick(L.magic), { chatter: true }); }
+    else if (c === 'transform') { if (!Feat.focusing() && !S.settings.quiet) transform(); }
     else if (c !== 'nothing') play(c);
   }
 
@@ -549,7 +615,7 @@
     const tt = ts / 1000, dt = Math.min(0.05, lastT ? tt - lastT : 0.016);
     lastT = tt; T += dt; modeT += dt;
 
-    const p = Object.assign(tgt, BASE, { sprite: 'front', fast: false, direct: null });
+    const p = Object.assign(tgt, BASE, { sprite: 'front', fast: false, direct: null, glitch: 0 });
     p.sy = 1 + 0.008 * Math.sin(T * 2.1);   // 呼吸
     MODES[mode].pose(p, modeT, dt);
     if (action) {
@@ -566,14 +632,14 @@
     const k = 1 - Math.exp(-dt * (p.fast ? 28 : 12));
     for (const key in BASE) cur[key] += (p[key] - cur[key]) * k;
     if (p.direct) p.direct.forEach((key) => (cur[key] = p[key]));
-    cur.sprite = p.sprite;
+    cur.sprite = p.sprite; cur.glitch = p.glitch;
 
     blinkT -= dt;
     if (blinkT < 0) { blinkPh = 0.13; blinkT = Math.random() < 0.2 ? 0.28 : rand(2.5, 6); }
     if (blinkPh > 0) blinkPh -= dt;
     const talking = now() < talkUntil && Math.floor(T * 9) % 2 === 1;
 
-    Chara.render({ ...cur, blink: blinkPh > 0, talk: talking, warm: S.settings.night ? 0 : 0.3 }, dt);
+    Chara.render({ ...cur, blink: blinkPh > 0, talk: talking, warm: S.settings.skin === 'classic' && !S.settings.night ? 0.3 : 0 }, dt);
     brain(dt);
     placeUi();
     requestAnimationFrame(frame);
@@ -589,9 +655,20 @@
   }
 
   // ---------- 每秒 ----------
+  async function applySkin(announce) {
+    const name = S.settings.skin;
+    await Chara.setSkin(name);
+    Chara.setForm('u');
+    transformUntil = 0;
+    document.body.classList.toggle('skin-rinne', name === 'rinne');
+    makeTrayIcon();
+    if (announce) { flash(); burst('star', 4); Snd.sparkle(); play('wave'); say(pick(name === 'rinne' ? L.skin : LINES.skinClassic)); }
+  }
+
   let lastNightCheck = 0;
   function secondTick() {
     Feat.tick();
+    if (Chara.form === 'm' && transformUntil && now() > transformUntil && !['held', 'thrown', 'fall'].includes(mode) && !action) untransform();
     if (S.settings.autoNight && Date.now() - lastNightCheck > 60000) {
       lastNightCheck = Date.now();
       const h = new Date().getHours(), want = h >= 19 || h < 6;
@@ -600,12 +677,12 @@
   }
 
   function greeting() {
-    const h = new Date().getHours(), G = LINES.greet;
+    const h = new Date().getHours(), G = L.greet;
     return pick(h < 5 || h >= 23 ? G.late : h < 11 ? G.morning : h < 14 ? G.noon : h < 18 ? G.afternoon : G.evening);
   }
   // 托盘图标：从原图正面裁出脸部
   function makeTrayIcon() {
-    const f = Chara.sprites.front;
+    const f = Chara.sprite('front');
     if (!f) return;
     const c = document.createElement('canvas');
     c.width = c.height = 64;
@@ -627,7 +704,8 @@
       S.todos = saved.todos || []; S.reminders = saved.reminders || [];
     }
     Chara.mount($('#pet'));
-    await Chara.load();
+    await Chara.setSkin(S.settings.skin);
+    document.body.classList.toggle('skin-rinne', S.settings.skin === 'rinne');
     buildStars();
     Feat.init(M);
     applySettings();
@@ -649,6 +727,7 @@
   }
 
   const M = {
+    L, transform, retry,
     S, say, play, save, fx: burst, addAff, setBadge, doAct, set: setSetting,
     walk: (d = 1) => { stopAction(); walkDir = d; api.send('walk', { dx: d * 300 * sc, speed: 1.1 * sc }); setMode('walk'); },
     wake: () => wakeUp(true),
@@ -669,6 +748,7 @@
       send(ch, d) {
         if (ch === 'drag-end') setTimeout(() => h.landed && h.landed({ hard: false }), 50);
         if (ch === 'walk') setTimeout(() => h['walk-end'] && h['walk-end'](), 2500);
+        if (ch === 'rewind') setTimeout(() => h.rewound && h.rewound(), 600);
         if (ch === 'save') { try { localStorage.setItem('miku', JSON.stringify(d)); } catch {} }
       },
       invoke: async () => { try { return JSON.parse(localStorage.getItem('miku')); } catch { return null; } },

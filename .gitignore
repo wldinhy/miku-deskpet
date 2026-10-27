@@ -2,3 +2,4 @@ node_modules/
 .claude/
 *.log
 dist/
+assets/src/rinne/

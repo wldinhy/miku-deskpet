@@ -12,9 +12,12 @@ let settings = {}, menuState = {};
 let L = { w: 300, h: 560, feet: 12, top: 280, half: 55 };
 const pos = { x: 0, y: 0 };
 const vel = { x: 0, y: 0 };
-let mode = 'idle';          // idle | drag | fall | throw | walk
+let mode = 'idle';          // idle | drag | fall | throw | walk | rewind
 let drag = null, walkTarget = 0, walkSpeed = 1.2, fallT = 0, hideTimer = null;
 const hist = [];
+// 最近 20 秒的位置轨迹，供「轮回重来」倒放
+const trail = [];
+let dragStartT = 0, rew = null;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dataPath = () => path.join(app.getPath('userData'), 'miku-data.json');
@@ -76,6 +79,10 @@ function tick() {
     pos.y += vel.y;
     pos.x = clamp(pos.x + Math.sin(fallT / 28) * 0.7, lim.minX, lim.maxX);
     if (pos.y >= lim.ground) { pos.y = lim.ground; mode = 'idle'; send('landed', { hard: false }); }
+  } else if (mode === 'rewind') {
+    rew.i = Math.min(rew.path.length - 1, rew.i + rew.step);
+    pos.x = rew.path[rew.i].x; pos.y = rew.path[rew.i].y;
+    if (rew.i >= rew.path.length - 1) { mode = 'idle'; rew = null; send('rewound'); }
   } else if (mode === 'walk') {
     const d = walkTarget - pos.x;
     if (Math.abs(d) <= walkSpeed) { pos.x = walkTarget; mode = 'idle'; send('walk-end'); }
@@ -83,6 +90,11 @@ function tick() {
   }
 
   if (pos.x !== bx || pos.y !== by) place();
+  if (mode !== 'rewind') {
+    const now = Date.now();
+    trail.push({ x: pos.x, y: pos.y, t: now });
+    while (trail.length && now - trail[0].t > 20000) trail.shift();
+  }
   send('tick', {
     cx: c.x, cy: c.y, wx: pos.x, wy: pos.y, dx: pos.x - bx, dy: pos.y - by, mode,
     onGround: Math.abs(pos.y - lim.ground) < 3,
@@ -98,7 +110,15 @@ function menuTemplate() {
   const acts = [['挥挥手', 'wave'], ['唱首歌', 'sing'], ['甩葱！', 'leek'], ['跳支舞', 'dance'], ['转个圈', 'spin'],
     ['跳一下', 'jump'], ['伸懒腰', 'stretch'], ['坐下休息', 'sit'], ['睡个午觉', 'sleep'], ['喂一根葱', 'feed'], ['递一杯水', 'drink']];
   return [
-    { label: '互动', submenu: acts.map(([l, id]) => ({ label: l, click: cmd('act', id) })) },
+    { label: '互动', submenu: [
+      ...(s.skin === 'rinne' ? [
+        { label: st.form === 'm' ? '解除变身' : '变身！', click: cmd('act', st.form === 'm' ? 'untransform' : 'transform') },
+        { label: '星星魔法', click: cmd('act', 'magic') },
+        { label: '轮回重来（倒回 8 秒前）', click: cmd('act', 'retry') },
+        { type: 'separator' },
+      ] : []),
+      ...acts.map(([l, id]) => ({ label: l, click: cmd('act', id) })),
+    ] },
     { label: '小功能', submenu: [
       { label: st.pomo ? `番茄钟（${st.pomo}）` : '番茄钟', click: cmd('panel', 'pomo') },
       { label: '待办便签', click: cmd('panel', 'todo') },
@@ -109,6 +129,7 @@ function menuTemplate() {
       { label: '好感度与记录', click: cmd('panel', 'status') },
     ] },
     { type: 'separator' },
+    { label: '皮肤', submenu: [radio('经典 · 淡彩', 'skin', 'classic'), radio('即刻轮回 · いますぐ輪廻', 'skin', 'rinne')] },
     check('月夜模式', 'night'),
     { label: '设置', submenu: [
       { label: '大小', submenu: [radio('小', 'scale', 0.8), radio('中', 'scale', 1), radio('大', 'scale', 1.25), radio('特大', 'scale', 1.5)] },
@@ -166,7 +187,16 @@ ipcMain.on('ready', () => {
   place();
   win.showInactive();
 });
-ipcMain.on('drag-start', (e, d) => { drag = d; mode = 'drag'; hist.length = 0; });
+ipcMain.on('drag-start', (e, d) => { drag = d; mode = 'drag'; hist.length = 0; dragStartT = Date.now(); });
+// 沿轨迹倒放回去：drag = 回到被拎起之前；time = 回到 8 秒前
+ipcMain.on('rewind', (e, { mode: m }) => {
+  if (mode === 'drag') return;
+  const cutoff = m === 'drag' ? dragStartT - 50 : Date.now() - 8000;
+  const path = trail.filter((p) => p.t >= cutoff).map((p) => ({ x: p.x, y: p.y })).reverse();
+  if (path.length < 2 || Math.hypot(path[0].x - path[path.length - 1].x, path[0].y - path[path.length - 1].y) < 2) { send('rewound'); return; }
+  rew = { path, i: 0, step: Math.max(1, Math.ceil(path.length / 75)) };
+  mode = 'rewind';
+});
 ipcMain.on('drag-end', (e, { gravity }) => {
   if (mode !== 'drag') return;
   const v = velocity();

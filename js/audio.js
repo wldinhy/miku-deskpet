@@ -158,6 +158,18 @@ window.Snd = (function () {
     fanfare() { if (!enabled) return; [72, 76, 79, 84].forEach((m, i) => bell(m, i * 0.12, master, 0.15)); },
     sad() { if (enabled) tone({ f: 520, slideTo: 330, dur: 0.5, vol: 0.12, type: 'triangle', release: 0.3 }); },
     chomp() { if (enabled) tone({ f: 260, slideTo: 180, dur: 0.07, vol: 0.14, type: 'square', release: 0.05 }); },
+    // 倒带：一串越来越快的下行“嘀”声 + 磁带拖慢的滑音
+    rewind() {
+      if (!enabled) return;
+      for (let i = 0; i < 10; i++) tone({ f: 1400 - i * 90, t0: i * 0.05 * (1 - i * 0.05), dur: 0.04, vol: 0.06, type: 'square', attack: 0.003, release: 0.03 });
+      tone({ f: 900, slideTo: 120, t0: 0.55, dur: 0.45, vol: 0.1, type: 'sawtooth', release: 0.3 });
+    },
+    // 变身：上行琶音 + 闪光
+    transform() {
+      if (!enabled) return;
+      [72, 76, 79, 84, 88, 91].forEach((m, i) => tone({ f: mtof(m), t0: i * 0.07, dur: 0.3, vol: 0.09, type: 'triangle', release: 0.25 }));
+      [84, 88, 91, 96].forEach((m, i) => tone({ f: mtof(m), t0: 0.5 + i * 0.05, dur: 0.5, vol: 0.06, release: 0.45 }));
+    },
     // 说话声：每个字一声很轻的“啵”
     say(ch) {
       if (!enabled || !voiceOn || /[\s，。！？…、～\-—.,!?~]/.test(ch)) return;

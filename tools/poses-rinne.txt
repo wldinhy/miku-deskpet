@@ -1,0 +1,28 @@
+u_idle|u|standing facing the viewer, relaxed pose with arms slightly away from the body, gentle closed-mouth smile, eyes open looking at the viewer
+m_idle|m|standing facing the viewer, holding the star wand upright in her right hand beside her, confident cute smile, eyes open
+u_walk|u|side view facing to the LEFT (profile), walking mid-step with one leg forward, arms swinging gently, cheerful smile, twin tails flowing behind her
+m_transform|m|mid magical-girl transformation, spinning on tiptoe with arms spread wide, eyes closed, striped ribbons swirling around her body, small yellow stars and sparkles around her
+u_wave|u|standing facing the viewer, cheerfully waving with her right hand raised high, eyes happily closed in upward arcs, open-mouth smile
+m_magic|m|casting a spell, pointing the star wand forward toward the viewer with one hand, the other hand on her hip, winking, a burst of small yellow stars from the wand tip
+u_happy|u|standing facing the viewer, both hands clasped near her chest, eyes happily closed, strong blush, delighted smile as if being patted on the head
+m_retry|m|playfully holding up a big round pale-yellow clock face with both hands like a sign, the clock hands pointing backward, one eye winking, cheeky smile, small stars around
+u_pout|u|standing facing the viewer, cheeks puffed out in a cute pout, annoyed eyebrows, blush, hands on her hips
+m_cheer|m|jumping with joy, both arms thrown up high with the star wand raised, feet off the ground, eyes closed happily, big open smile
+u_surprised|u|standing facing the viewer, startled, eyes wide open, small round open mouth, both hands raised up in surprise
+m_walk|m|side view facing to the LEFT (profile), walking mid-step with one leg forward, holding the star wand over her shoulder, cheerful smile, ribbon streamers flowing behind
+u_shy|u|standing facing the viewer, shy, looking away to the side, deep blush, index fingers touching together in front of her chest
+m_wave|m|standing facing the viewer, waving the star wand high above her head leaving a trail of small yellow stars, eyes happily closed, open-mouth smile
+u_sad|u|standing facing the viewer, teary-eyed with small tears, wobbly frown, hands holding the hem of her skirt
+m_dance|m|mid-dance idol pose, one knee lifted, the star wand pointing up to the sky, other hand on her hip, winking, smiling, skirt and ribbons swaying
+u_think|u|standing facing the viewer, index finger on her chin, looking upward, slightly puzzled expression
+m_sing|m|singing joyfully, holding the star wand near her mouth like a microphone, eyes closed, mouth open, other arm stretched outward
+u_sit|u|sitting on the ground facing the viewer, legs stretched forward with knees slightly bent, hands resting beside her, gentle smile, twin tails spread on the floor
+m_held|m|being lifted up into the air as if picked up, arms raised still gripping the star wand, legs dangling, flustered surprised expression with blush
+u_sleep|u|sitting on the ground dozing off, head tilted to one side, eyes peacefully closed, hands in her lap, twin tails resting on the floor
+u_held|u|being lifted up into the air as if picked up, arms raised, legs dangling, flustered surprised expression with blush, twin tails hanging down
+u_dizzy|u|standing unsteadily, dizzy with swirly spiral eyes, wobbly mouth, body slightly tilted, one hand on her head
+u_eat|u|standing facing the viewer, happily nibbling on a green onion (leek) held with both hands near her mouth, eyes closed in bliss, blush
+u_back|u|seen directly from behind (back view), standing straight, arms relaxed, both long twin tails with striped ribbons hanging down her back
+u_side|u|side view facing to the LEFT, standing still, arms relaxed, gentle closed-mouth smile
+u_drink|u|standing facing the viewer, drinking from a small white mug held with both hands, eyes closed, content expression
+u_stretch|u|standing facing the viewer, stretching with both arms raised straight above her head, eyes closed, relaxed sleepy expression

@@ -199,3 +199,32 @@ button, input, select { font: inherit; color: var(--ink); }
 
 .help { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.7; }
 .help b { color: var(--teal-d); }
+
+/* ---------- 变身闪光 ---------- */
+#flash {
+  position: absolute; width: calc(var(--unit) * 1.3); height: calc(var(--unit) * 1.3);
+  transform: translate(-50%, -50%) scale(.2); border-radius: 50%; pointer-events: none; opacity: 0; z-index: 2;
+  background: radial-gradient(circle, rgba(255, 255, 255, .95) 0%, rgba(255, 196, 222, .65) 35%, rgba(255, 236, 160, .25) 55%, transparent 70%);
+}
+#flash.on { animation: flash .55s ease-out; }
+@keyframes flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+/* ---------- 「即刻轮回」皮肤配色 ---------- */
+body.skin-rinne {
+  --paper: #fff6fa; --paper2: #fdeaf3; --ink: #5a3d63; --ink-soft: #9a7aa3;
+  --teal: #ec6fa6; --teal-d: #c94c86; --teal-soft: #f6b6d2; --pink: #f2a93b;
+}
+body.skin-rinne #bubble { border-width: 2px; box-shadow: 0 3px 10px rgba(201, 76, 134, .18); font-weight: 600; }
+body.skin-rinne #bubble::before {
+  content: "★"; position: absolute; left: -7px; top: -9px; color: #f7d34a; font-size: 15px;
+  text-shadow: 0 0 2px #fff, 0 0 4px rgba(201, 76, 134, .5);
+}
+body.skin-rinne .fx-star { color: #f7d34a; text-shadow: 0 0 3px #fff, 0 0 6px rgba(236, 111, 166, .7); }
+body.skin-rinne .fx-heart { color: #ec6fa6; }
+body.skin-rinne .fx-note { color: #ec6fa6; }
+body.skin-rinne .fx-spark { color: #7fd6e8; }
+body.skin-rinne #badge { color: #c94c86; border-color: #f6b6d2; }

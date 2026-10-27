@@ -28,7 +28,7 @@ window.Feat = (function () {
     const P = pomo();
     if (P.phase === 'idle') {
       P.phase = 'work'; P.end = Date.now() + M.S.settings.pomoWork * 60000; P.paused = null;
-      M.say(pick(LINES.pomoStart)); M.play('nod');
+      M.say(pick(M.L.pomoStart)); M.play('nod');
     } else if (P.paused != null) {
       P.end = Date.now() + P.paused; P.paused = null; M.say('继续！');
     } else {
@@ -52,12 +52,12 @@ window.Feat = (function () {
       P.count++; M.S.stats.pomos++;
       P.phase = 'break'; P.end = Date.now() + M.S.settings.pomoBreak * 60000;
       M.wake(); M.play('cheer'); Snd.fanfare(); M.fx('star', 3); M.addAff(4);
-      M.say(pick(LINES.pomoDone), { dur: 5 });
+      M.say(pick(M.L.pomoDone), { dur: 5 });
       M.notify('番茄钟', `专注完成！休息 ${M.S.settings.pomoBreak} 分钟吧～`);
     } else {
       P.phase = 'idle';
       M.wake(); M.play('wave'); Snd.chime();
-      M.say(pick(LINES.breakDone), { dur: 4 });
+      M.say(pick(M.L.breakDone), { dur: 4 });
       M.notify('番茄钟', '休息结束，继续加油！');
     }
     M.save();
@@ -87,12 +87,12 @@ window.Feat = (function () {
     // 喝水
     if (s.water && nowMs - timers.water > s.water * 60000 && !busy) {
       timers.water = nowMs;
-      M.wake(); M.play('drink'); M.say(pick(LINES.water), { dur: 5 });
+      M.wake(); M.play('drink'); M.say(pick(M.L.water), { dur: 5 });
     }
     // 久坐
     if (s.sitRemind && nowMs - timers.sit > s.sitRemind * 60000 && !busy) {
       timers.sit = nowMs;
-      M.wake(); M.play('stretch'); M.say(pick(LINES.sitLong), { dur: 5 });
+      M.wake(); M.play('stretch'); M.say(pick(M.L.sitLong), { dur: 5 });
       M.notify('该活动一下啦', '已经坐了很久了，站起来走走吧～');
     }
     // 整点报时
@@ -170,7 +170,7 @@ window.Feat = (function () {
           else if (e.target.closest('label')) {
             e.preventDefault();
             item.done = !item.done;
-            if (item.done) { M.play('cheer'); Snd.sparkle(); M.say(pick(LINES.todoDone)); M.addAff(1); }
+            if (item.done) { M.play('cheer'); Snd.sparkle(); M.say(pick(M.L.todoDone)); M.addAff(1); }
           }
           M.save(); refresh();
         };
@@ -199,7 +199,7 @@ window.Feat = (function () {
           const text = b.querySelector('.txt').value.trim() || '时间到啦！';
           M.S.reminders.push({ id: Date.now(), due: Date.now() + mins * 60000, text });
           b.querySelector('.txt').value = '';
-          M.say(pick(LINES.remindAdd)); M.play('nod'); M.save(); refresh();
+          M.say(pick(M.L.remindAdd)); M.play('nod'); M.save(); refresh();
         };
         b.querySelectorAll('form').forEach((f) => (f.onsubmit = go));
         b.querySelector('.rems').onclick = (e) => {
@@ -287,6 +287,7 @@ window.Feat = (function () {
             <span>戳戳</span><b>${st.pokes}</b><span>被扔出去</span><b>${st.throws}</b>
             <span>唱歌</span><b>${st.songs}</b><span>喂葱</span><b>${st.feeds}</b>
             <span>番茄</span><b>${st.pomos}</b><span>猜拳</span><b>${st.rpsWin + st.rpsLose + st.rpsDraw}</b>
+            <span>轮回重来</span><b>${st.retries || 0}</b>
           </div>`;
       },
     },
@@ -302,6 +303,7 @@ window.Feat = (function () {
           <li><b>按住拖动</b> 拎起来；用力甩出去会被抛飞、撞墙反弹</li>
           <li><b>右键</b> 打开菜单：唱歌、甩葱、跳舞、喂葱、番茄钟、待办、提醒、猜拳、运势、设置……</li>
           <li><b>月夜模式</b> 在月亮前漂浮 · 可设为入夜自动切换</li>
+          <li><b>皮肤</b> 右键 → 皮肤 → 即刻轮回：可以变身、放星星魔法、「轮回重来」倒回 8 秒前</li>
           <li>长时间不理她会打瞌睡，点一下就醒了</li>
           <li>托盘图标：左键 显示/隐藏，右键 菜单</li>
         </ul>`,
