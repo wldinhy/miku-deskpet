@@ -1,6 +1,6 @@
 {
   "name": "miku-deskpet",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "淡彩风初音未来桌宠：立绘动画、拖拽抛掷、唱歌甩葱、番茄钟、待办、提醒、猜拳、运势……",
   "main": "main.js",
   "scripts": {
@@ -37,6 +37,7 @@
       "style.css",
       "js/**",
       "assets/gen/**",
+      "assets/skins/**",
       "package.json"
     ],
     "win": {
