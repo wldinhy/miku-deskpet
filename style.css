@@ -26,7 +26,7 @@ html.preview body {
 }
 #stage { position: absolute; inset: 0; }
 #pet { position: absolute; inset: 0; }
-#miku { position: absolute; left: 0; top: 0; }
+#chara { position: absolute; left: 0; top: 0; }
 body.grab { cursor: pointer; }
 
 .hidden { display: none !important; }
@@ -228,3 +228,80 @@ body.skin-rinne .fx-heart { color: #ec6fa6; }
 body.skin-rinne .fx-note { color: #ec6fa6; }
 body.skin-rinne .fx-spark { color: #7fd6e8; }
 body.skin-rinne #badge { color: #c94c86; border-color: #f6b6d2; }
+
+/* ---------- 「FX战士久留美」皮肤配色 ---------- */
+body.skin-kurumi {
+  --paper: #fff7f9; --paper2: #fde9ef; --ink: #5b3a4a; --ink-soft: #a07b8b;
+  --teal: #e8638f; --teal-d: #b8406a; --teal-soft: #f5b8cb; --pink: #e0a13a;
+}
+body.skin-kurumi #moon { display: none; }
+body.skin-kurumi #bubble { border-width: 2px; box-shadow: 0 3px 10px rgba(184, 64, 106, .16); font-weight: 600; }
+body.skin-kurumi #bubble::before {
+  content: "¥"; position: absolute; left: -6px; top: -10px; color: #e0a13a; font-size: 15px; font-weight: 800;
+  text-shadow: 0 0 2px #fff, 0 0 4px rgba(184, 64, 106, .4);
+}
+body.skin-kurumi .fx-heart { color: #e8638f; }
+body.skin-kurumi .fx-spark { color: #f3b23e; }
+.fx-yen { color: #e0a13a; font-weight: 800; font-size: calc(20px * var(--sc)); text-shadow: 0 0 2px #fff, 0 0 5px rgba(224, 161, 58, .6); }
+.fx-up { color: #ee6f9c; font-size: calc(15px * var(--sc)); }
+.fx-down { color: #6aa7d8; font-size: calc(15px * var(--sc)); }
+.fx-drop { font-size: calc(15px * var(--sc)); }
+#badge[data-phase=up] { color: #d8487b; border-color: #f5b8cb; }
+#badge[data-phase=down] { color: #3f7fb8; border-color: #b9d4ec; }
+
+/* FX 模拟盘 */
+#panel[data-name=fx] { max-height: 392px; }
+#panel[data-name=fx] .body { overflow-x: hidden; padding-top: 6px; }
+.fx-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px; }
+.fx-price { font-size: 20px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.fx-chg, .fx-pl { font-variant-numeric: tabular-nums; }
+.fx-chg.up, .fx-pl.up { color: #d8487b; }
+.fx-chg.down, .fx-pl.down { color: #3f7fb8; }
+.fx-chart { width: 100%; height: 88px; box-sizing: border-box; display: block; margin: 3px 0 4px; background: #fffdfd; border: 1.2px solid var(--teal-soft); border-radius: 10px; }
+.fx-acct { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 12px; margin: 0 4px; }
+.fx-acct span { color: var(--ink-soft); }
+.fx-acct b { font-weight: 600; font-variant-numeric: tabular-nums; }
+#panel .fx-btns button { min-width: 52px; padding: 3px 10px; }
+#panel .fx-btns .buy { background: #ee6f9c; border-color: #ee6f9c; color: #fff; }
+#panel .fx-btns .sell { background: #5f9fd4; border-color: #5f9fd4; color: #fff; }
+#panel .fx-btns button:disabled { opacity: .4; pointer-events: none; }
+#panel .fx-btns .hidden { display: none; }
+#panel[data-name=fx] .bar { height: 7px; border-radius: 4px; background: #f1e3e8; margin: 4px 0 0; overflow: hidden; }
+#panel[data-name=fx] .bar i { display: block; height: 100%; background: linear-gradient(90deg, #f5b8cb, #e0a13a); border-radius: 4px; }
+.fx-note { font-size: 10.5px; opacity: .8; }
+
+/* ---------- 「芙宁娜」皮肤配色 ---------- */
+body.skin-furina {
+  --paper: #f6faff; --paper2: #e7f1ff; --ink: #34407a; --ink-soft: #7f8bbd;
+  --teal: #5b8def; --teal-d: #3d63c9; --teal-soft: #b6cdf6; --pink: #e2b04a;
+}
+body.skin-furina #moon { display: none; }
+body.skin-furina #bubble { border-width: 2px; box-shadow: 0 3px 10px rgba(61, 99, 201, .16); font-weight: 600; }
+body.skin-furina #bubble::before {
+  content: "♛"; position: absolute; left: -8px; top: -11px; color: #e2b04a; font-size: 15px;
+  text-shadow: 0 0 2px #fff, 0 0 4px rgba(61, 99, 201, .4);
+}
+body.skin-furina .fx-heart { color: #6f9cf2; }
+body.skin-furina .fx-note { color: #5b8def; }
+body.skin-furina .fx-star { color: #f2c94c; text-shadow: 0 0 3px #fff, 0 0 6px rgba(91, 141, 239, .6); }
+body.skin-furina .fx-spark { color: #8fd3ff; }
+body.skin-furina #badge { color: #3d63c9; border-color: #b6cdf6; }
+.fx-bubble { color: #7fc4ff; font-size: calc(20px * var(--sc)); text-shadow: 0 0 3px #fff; }
+.fx-confetti { color: #e2b04a; font-size: calc(13px * var(--sc)); }
+.fx-confetti:nth-child(3n) { color: #6f9cf2; }
+.fx-confetti:nth-child(3n+1) { color: #f28fb4; }
+.fx-rain { color: rgba(110, 160, 230, .75); font-size: calc(16px * var(--sc)); animation-name: rainDown; animation-duration: 1.1s; animation-timing-function: linear; }
+@keyframes rainDown {
+  0% { opacity: 0; transform: translate(-50%, -50%); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% + 120px)); }
+}
+
+/* 歌剧院审判 */
+.vd-res {
+  margin: 8px 2px 4px; padding: 10px 12px; border-radius: 12px; min-height: 40px;
+  background: #fffdf8; border: 1.5px dashed var(--teal-soft); font-size: 13px; line-height: 1.6; text-align: center; color: var(--ink-soft);
+}
+.vd-res.guilty { color: #b0405f; border-style: solid; border-color: #f0b7c8; background: #fff6f8; font-weight: 600; }
+.vd-res.innocent { color: #3d63c9; border-style: solid; border-color: #b6cdf6; background: #f4f8ff; font-weight: 600; }
+.vd-res.dramatic { color: #8a5bc9; border-style: solid; border-color: #d8c4f2; font-weight: 600; }

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
+// 沿用旧的 appId，安装新版时能直接覆盖升级旧版
 app.setAppUserModelId('com.miku.deskpet');
 
 let win = null, tray = null;
@@ -20,7 +21,16 @@ const trail = [];
 let dragStartT = 0, rew = null;
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const dataPath = () => path.join(app.getPath('userData'), 'miku-data.json');
+const dataPath = () => path.join(app.getPath('userData'), 'deskpet-data.json');
+// 旧版（Miku Deskpet）的存档：第一次启动新版时搬过来
+function migrate() {
+  if (fs.existsSync(dataPath())) return;
+  const old = [path.join(app.getPath('userData'), 'miku-data.json'), path.join(app.getPath('appData'), 'Miku Deskpet', 'miku-data.json')];
+  const src = old.find((p) => fs.existsSync(p));
+  if (src) try { fs.mkdirSync(path.dirname(dataPath()), { recursive: true }); fs.copyFileSync(src, dataPath()); } catch {}
+}
+// 角色名：托盘提示、通知等处使用
+const CHARA_NAME = { classic: '初音未来', rinne: '初音未来', kurumi: '福贺久留美', furina: '芙宁娜' };
 function readData() { try { return JSON.parse(fs.readFileSync(dataPath(), 'utf8')); } catch { return {}; } }
 function writeData(patch) {
   try { fs.writeFileSync(dataPath(), JSON.stringify(Object.assign(readData(), patch))); } catch {}
@@ -107,8 +117,17 @@ function menuTemplate() {
   const cmd = (id, v) => () => send('menu', { id, v });
   const radio = (label, key, val) => ({ label, type: 'radio', checked: s[key] === val, click: cmd('set', { key, val }) });
   const check = (label, key) => ({ label, type: 'checkbox', checked: !!s[key], click: cmd('set', { key, val: !s[key] }) });
-  const acts = [['挥挥手', 'wave'], ['唱首歌', 'sing'], ['甩葱！', 'leek'], ['跳支舞', 'dance'], ['转个圈', 'spin'],
-    ['跳一下', 'jump'], ['伸懒腰', 'stretch'], ['坐下休息', 'sit'], ['睡个午觉', 'sleep'], ['喂一根葱', 'feed'], ['递一杯水', 'drink']];
+  const kurumi = s.skin === 'kurumi', furina = s.skin === 'furina';
+  const acts = furina
+    ? [['登台致意', 'bow'], ['召唤沙龙成员', 'salon'], ['万众狂欢！', 'rejoice'], ['逞强一下', 'brave'], ['哭给你看', 'cry'], null,
+      ['挥挥手', 'wave'], ['唱首歌', 'sing'], ['跳支舞', 'dance'], ['转个圈', 'spin'], ['伸懒腰', 'stretch'], ['坐下休息', 'sit'],
+      ['睡个午觉', 'sleep'], ['请她吃蛋糕', 'feed'], ['陪她喝下午茶', 'drink']]
+    : kurumi
+    ? [['看看行情', 'chart'], ['啃 FX 教材', 'study'], ['向 K 线祈祷', 'pray'], ['进入暴走模式', 'frenzy'], null,
+      ['挥挥手', 'wave'], ['转个圈', 'spin'], ['跳一下', 'jump'], ['伸懒腰', 'stretch'], ['坐下休息', 'sit'], ['睡个午觉', 'sleep'],
+      ['请她吃饭团', 'feed'], ['递一罐咖啡', 'drink']]
+    : [['挥挥手', 'wave'], ['唱首歌', 'sing'], ['甩葱！', 'leek'], ['跳支舞', 'dance'], ['转个圈', 'spin'],
+      ['跳一下', 'jump'], ['伸懒腰', 'stretch'], ['坐下休息', 'sit'], ['睡个午觉', 'sleep'], ['喂一根葱', 'feed'], ['递一杯水', 'drink']];
   return [
     { label: '互动', submenu: [
       ...(s.skin === 'rinne' ? [
@@ -117,9 +136,11 @@ function menuTemplate() {
         { label: '轮回重来（倒回 8 秒前）', click: cmd('act', 'retry') },
         { type: 'separator' },
       ] : []),
-      ...acts.map(([l, id]) => ({ label: l, click: cmd('act', id) })),
+      ...acts.map((a) => (a ? { label: a[0], click: cmd('act', a[1]) } : { type: 'separator' })),
     ] },
     { label: '小功能', submenu: [
+      ...(kurumi ? [{ label: st.fx ? `FX 模拟盘（${st.fx}）` : 'FX 模拟盘', click: cmd('panel', 'fx') }, { type: 'separator' }] : []),
+      ...(furina ? [{ label: '歌剧院审判', click: cmd('panel', 'verdict') }, { type: 'separator' }] : []),
       { label: st.pomo ? `番茄钟（${st.pomo}）` : '番茄钟', click: cmd('panel', 'pomo') },
       { label: '待办便签', click: cmd('panel', 'todo') },
       { label: '定时提醒', click: cmd('panel', 'remind') },
@@ -129,8 +150,17 @@ function menuTemplate() {
       { label: '好感度与记录', click: cmd('panel', 'status') },
     ] },
     { type: 'separator' },
-    { label: '皮肤', submenu: [radio('经典 · 淡彩', 'skin', 'classic'), radio('即刻轮回 · いますぐ輪廻', 'skin', 'rinne')] },
-    check('月夜模式', 'night'),
+    { label: '角色 / 皮肤', submenu: [
+      { label: '初音未来', enabled: false },
+      radio('　即刻轮回 · いますぐ輪廻', 'skin', 'rinne'), radio('　经典 · 淡彩', 'skin', 'classic'),
+      { type: 'separator' },
+      { label: '福贺久留美', enabled: false },
+      radio('　FX战士 · 白色连衣裙', 'skin', 'kurumi'),
+      { type: 'separator' },
+      { label: '芙宁娜', enabled: false },
+      radio('　魔法偶像 · 舞台装', 'skin', 'furina'),
+    ] },
+    check(kurumi ? '深夜盯盘' : furina ? '谢幕之后' : '月夜模式', 'night'),
     { label: '设置', submenu: [
       { label: '大小', submenu: [radio('小', 'scale', 0.8), radio('中', 'scale', 1), radio('大', 'scale', 1.25), radio('特大', 'scale', 1.5)] },
       { label: '不透明度', submenu: [radio('100%', 'opacity', 1), radio('85%', 'opacity', 0.85), radio('70%', 'opacity', 0.7), radio('50%', 'opacity', 0.5)] },
@@ -145,7 +175,7 @@ function menuTemplate() {
       check('说话声', 'voice'),
       check('整点报时', 'hourly'),
       check('安静模式（少说话）', 'quiet'),
-      check('入夜自动切换月夜', 'autoNight'),
+      check(kurumi ? '入夜自动开始深夜盯盘' : furina ? '入夜自动谢幕' : '入夜自动切换月夜', 'autoNight'),
       check('开机自启', 'launch'),
     ] },
     { type: 'separator' },
@@ -234,6 +264,7 @@ ipcMain.on('stop-walk', () => { if (mode === 'walk') mode = 'idle'; });
 ipcMain.on('settings', (e, s) => {
   const prev = settings;
   settings = s;
+  if (tray) tray.setToolTip(`桌宠 · ${CHARA_NAME[s.skin] || ''}`);
   if (!win) return;
   win.setAlwaysOnTop(!!s.top, 'floating');
   win.setOpacity(s.opacity || 1);
@@ -254,7 +285,7 @@ ipcMain.on('tray-icon', (e, url) => {
   const img = nativeImage.createFromDataURL(url);
   if (!tray) {
     tray = new Tray(img);
-    tray.setToolTip('Miku 桌宠');
+    tray.setToolTip(`桌宠 · ${CHARA_NAME[settings.skin] || ''}`);
     tray.on('click', () => (win.isVisible() ? hideWin() : showWin()));
     tray.on('right-click', () => {
       tray.popUpContextMenu(Menu.buildFromTemplate([
@@ -270,11 +301,12 @@ ipcMain.on('quit', () => app.quit());
 
 // ---------- 启动 ----------
 function create() {
+  migrate();
   win = new BrowserWindow({
     width: L.w, height: L.h, x: 0, y: 0,
     transparent: true, frame: false, resizable: false, maximizable: false, minimizable: false,
     fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, hasShadow: false, show: false,
-    backgroundColor: '#00000000', title: 'Miku',
+    backgroundColor: '#00000000', title: '桌宠',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, nodeIntegration: false, backgroundThrottling: false,
@@ -290,16 +322,16 @@ function create() {
     if (win && !win.isDestroyed() && win.isVisible() && settings.top !== false) win.setAlwaysOnTop(true, 'floating');
   }, 3000);
 
-  // 调试：MIKU_SHOT=路径 时截一张图后退出
-  if (process.env.MIKU_EVAL) {
-    setTimeout(() => win.webContents.executeJavaScript(process.env.MIKU_EVAL).catch(() => {}), 3000);
+  // 调试：PET_SHOT=路径 时截一张图后退出
+  if (process.env.PET_EVAL) {
+    setTimeout(() => win.webContents.executeJavaScript(process.env.PET_EVAL).catch(() => {}), 3000);
   }
-  if (process.env.MIKU_SHOT) {
+  if (process.env.PET_SHOT) {
     setTimeout(async () => {
       const img = await win.webContents.capturePage();
-      fs.writeFileSync(process.env.MIKU_SHOT, img.toPNG());
+      fs.writeFileSync(process.env.PET_SHOT, img.toPNG());
       app.quit();
-    }, +(process.env.MIKU_SHOT_DELAY || 3500));
+    }, +(process.env.PET_SHOT_DELAY || 3500));
   }
 }
 

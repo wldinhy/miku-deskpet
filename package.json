@@ -1,7 +1,7 @@
 {
-  "name": "miku-deskpet",
-  "version": "1.1.0",
-  "description": "淡彩风初音未来桌宠：立绘动画、拖拽抛掷、唱歌甩葱、番茄钟、待办、提醒、猜拳、运势……",
+  "name": "deskpet",
+  "version": "1.2.0",
+  "description": "桌宠合集：初音未来（即刻轮回 / 经典）、福贺久留美（FX战士）、芙宁娜（魔法偶像）……立绘动画、拖拽抛掷、番茄钟、待办、提醒、猜拳、运势、FX 模拟盘、歌剧院审判",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -20,12 +20,14 @@
   "keywords": [
     "desktop-pet",
     "electron",
-    "hatsune-miku"
+    "hatsune-miku",
+    "fx-kurumi",
+    "furina"
   ],
   "build": {
     "appId": "com.miku.deskpet",
-    "productName": "Miku Deskpet",
-    "copyright": "Code MIT © 2026 wldinhy · Hatsune Miku © Crypton Future Media, INC.",
+    "productName": "Deskpet",
+    "copyright": "Code MIT © 2026 wldinhy · Hatsune Miku © Crypton Future Media, INC. · FX戦士くるみちゃん: でむにゃん / 炭酸だいすき · Furina (Genshin Impact) © HoYoverse",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -63,16 +65,16 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Miku 桌宠",
-      "uninstallDisplayName": "Miku 桌宠",
+      "shortcutName": "桌宠",
+      "uninstallDisplayName": "桌宠",
       "installerLanguages": [
         "zh_CN"
       ],
       "language": "2052",
-      "artifactName": "Miku-Deskpet-Setup-${version}.exe"
+      "artifactName": "Deskpet-Setup-${version}.exe"
     },
     "portable": {
-      "artifactName": "Miku-Deskpet-Portable-${version}.exe"
+      "artifactName": "Deskpet-Portable-${version}.exe"
     }
   }
 }

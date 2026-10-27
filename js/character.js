@@ -32,8 +32,31 @@
           held: 'm_held', stretch: 'm_cheer', think: 'm_retry' },
       },
     },
+    // 福贺久留美：短发波波头，头发飘动幅度小
+    kurumi: {
+      dir: 'assets/skins/kurumi', hair: 0.35,
+      files: {
+        idle: {}, side: { profile: 1 }, back: {}, walk: { profile: 1 }, held: { h: 1.05 }, wave: { h: 1.04 }, happy: {}, pout: {},
+        surprised: { h: 1.02 }, shy: {}, sad: { h: 0.98 }, dizzy: {}, think: {}, sit: { h: 0.72 }, sleep: { h: 0.72 }, eat: {}, drink: {},
+        stretch: { h: 1.12 }, cheer: { h: 1.1 }, phone: {}, buy: { h: 1.1 }, sell: {}, profit: { h: 1.02 }, losscut: { h: 0.72 },
+        frenzy: { h: 0.98 }, study: {}, pray: {}, night: { h: 0.8 },
+      },
+      map: { front: 'idle', walk1: 'walk', transform: 'cheer', magic: 'pray', retry: 'think', leek: 'frenzy', sing: 'happy', dance: 'cheer' },
+    },
+    // 芙宁娜：魔法偶像造型，长卷发
+    furina: {
+      dir: 'assets/skins/furina', hair: 0.7,
+      files: {
+        idle: {}, side: { profile: 1 }, back: {}, walk: { profile: 1 }, held: { h: 1.05 }, wave: { h: 1.04 }, happy: {}, pout: {},
+        surprised: { h: 1.03 }, shy: {}, sad: { h: 0.98 }, dizzy: {}, think: {}, sit: { h: 0.72 }, sleep: { h: 0.78 }, eat: {}, drink: {},
+        stretch: { h: 1.12 }, cheer: { h: 1.1 }, sing: {}, dance: { h: 1.04 }, bow: {}, salon: { h: 1.06 }, cry: {}, brave: {},
+        verdict: { h: 1.02 }, night: { h: 0.9 },
+      },
+      map: { front: 'idle', walk1: 'walk', transform: 'cheer', magic: 'salon', retry: 'think', leek: 'salon', phone: 'think' },
+    },
   };
-  const STANDING = ['idle', 'back', 'wave', 'happy', 'pout', 'surprised', 'shy', 'sad', 'think', 'eat', 'drink', 'sing'];
+  const STANDING = ['idle', 'back', 'wave', 'happy', 'pout', 'surprised', 'shy', 'sad', 'think', 'eat', 'drink', 'sing',
+    'phone', 'sell', 'study', 'pray', 'profit', 'cry', 'brave', 'bow'];
   let skin = 'classic', form = 'u', onFormSwap = null;
 
   // 正面图的五官位置（像素坐标），用于眨眼 / 说话叠层；没有标定的图就不做叠层
@@ -190,7 +213,7 @@
   }
   function mount(container) {
     canvas = document.createElement('canvas');
-    canvas.id = 'miku';
+    canvas.id = 'chara';
     container.appendChild(canvas);
     gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
     prog = gl.createProgram();
@@ -275,8 +298,9 @@
     gl.uniform1i(loc.tex, 0);
     gl.uniform4f(loc.bb, s.bb.x0 / s.w, s.bb.y0 / s.h, s.bb.x1 / s.w, s.bb.y1 / s.h);
     gl.uniform1f(loc.alpha, a * (st.alpha ?? 1));
-    gl.uniform1f(loc.sway, st.sway ?? 0.012);
-    gl.uniform1f(loc.lag, hair.x);
+    const hk = SKINS[skin].hair ?? 1;
+    gl.uniform1f(loc.sway, (st.sway ?? 0.012) * hk);
+    gl.uniform1f(loc.lag, hair.x * hk);
     gl.uniform1f(loc.warm, st.warm ?? 0);
     gl.uniform1f(loc.prof, s.def.profile ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

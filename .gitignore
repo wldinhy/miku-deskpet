@@ -3,3 +3,5 @@ node_modules/
 *.log
 dist/
 assets/src/rinne/
+assets/src/kurumi/
+assets/src/furina/

@@ -1,0 +1,26 @@
+walk|d|side view facing to the LEFT (profile), walking mid-step with one leg forward, arms swinging gently, cheerful smile, hair and dress hem bouncing slightly
+side|d|side view facing to the LEFT (full profile), standing upright, hands relaxed at her sides, calm small smile, looking ahead to the left
+back|d|seen from directly behind (back view), standing, we see the back of her pink bob hair and the dark-red ribbon belt tied in a bow at the back of the dress, arms relaxed
+held|d|being lifted into the air by the back of her collar by an invisible hand, dangling with both arms and legs flailing, panicked surprised face with wide eyes and open mouth, small sweat drops
+wave|d|standing facing the viewer, cheerfully waving with her right hand raised high, eyes happily closed in upward arcs, open-mouth smile
+happy|d|standing facing the viewer, being patted on the head, eyes closed contentedly, big blush, soft happy smile, hands clasped in front of her chest
+pout|d|standing facing the viewer, pouting angrily with puffed-up cheeks, fists clenched at her sides, small anger mark, blush
+surprised|d|standing facing the viewer, jumping slightly in surprise, both hands raised near her face, eyes wide, small round open mouth
+shy|d|standing facing the viewer, very embarrassed, deep blush, looking away to the side, fingers fidgeting together in front of her chest, wobbly smile
+sad|d|standing facing the viewer, sad and teary, big tear drops at the corners of her eyes, hands clasped in front of her, shoulders slumped, small frown
+dizzy|d|standing wobbly facing the viewer, dizzy with spiral swirl eyes, tongue slightly out, hands floating loosely, small stars circling above her head
+think|d|standing facing the viewer, thinking hard with her index finger on her chin, eyes looking up, small question-mark-free puzzled expression
+sit|d|sitting on the floor with both legs folded to one side, hands resting on her lap, relaxed gentle smile, facing the viewer
+sleep|c|lying curled up on her side on the floor, fast asleep, wrapped in the pink cardigan like a blanket, peaceful sleeping face, hugging a white smartphone to her chest
+eat|d|standing facing the viewer, happily eating a rice ball (onigiri) held in both hands, cheeks puffed, eyes closed with joy
+drink|d|standing facing the viewer, drinking from a small can of coffee with both hands, eyes closed, relieved expression
+stretch|d|standing facing the viewer, stretching both arms high above her head, eyes closed, yawning with a small open mouth
+cheer|d|jumping with joy facing the viewer, both fists raised high above her head, eyes closed in happy arcs, big open-mouth smile
+phone|d|standing facing the viewer, staring intently at a white smartphone held in both hands in front of her chest, the phone screen faces her (we see the back of the phone), serious focused eyes, a tiny sweat drop
+buy|d|energetic triumphant pose facing the viewer: pointing her right index finger straight up toward the sky, left fist clenched at her waist, shouting excitedly with sparkling eyes and wide open mouth, one heel lifted
+sell|d|confident pose facing the viewer: pointing her right index finger straight down at the ground, left hand on her hip, smug grin with half-closed eyes
+profit|d|overjoyed facing the viewer, holding up a fan of several plain beige Japanese banknotes in both hands (no readable text or portraits), sparkling starry eyes, drooling slightly, blushing, wide smile
+losscut|d|cute comedic despair after losing money: sitting slumped on the floor with legs folded, crying with big cartoon tear streams, mouth wobbly, a white smartphone in her lap, a small grey gloom cloud motif above her head
+study|d|standing facing the viewer, seriously reading a thick open textbook held in both hands, a pencil tucked behind her ear, focused eyes, slightly furrowed brows
+pray|d|standing facing the viewer, hands pressed together in prayer in front of her face, eyes squeezed shut, desperately praying, a sweat drop on her forehead
+frenzy|d|over-excited greedy trader mode (cute comedy version): leaning forward clutching a white smartphone with both hands, sparkling starry eyes, a big determined grin, cheeks flushed, tiny sweat drop, hair bouncing with excitement

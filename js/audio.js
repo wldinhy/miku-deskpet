@@ -170,6 +170,16 @@ window.Snd = (function () {
       [72, 76, 79, 84, 88, 91].forEach((m, i) => tone({ f: mtof(m), t0: i * 0.07, dur: 0.3, vol: 0.09, type: 'triangle', release: 0.25 }));
       [84, 88, 91, 96].forEach((m, i) => tone({ f: mtof(m), t0: 0.5 + i * 0.05, dur: 0.5, vol: 0.06, release: 0.45 }));
     },
+    // 收钱：两声清脆的“叮”
+    coin() {
+      if (!enabled) return;
+      [[88, 0], [95, 0.09]].forEach(([m, t]) => { tone({ f: mtof(m), t0: t, dur: 0.35, vol: 0.12, type: 'square', attack: 0.003, release: 0.3 }); tone({ f: mtof(m + 12), t0: t, dur: 0.25, vol: 0.05, attack: 0.003, release: 0.22 }); });
+    },
+    // 强制平仓警报：急促的双音
+    alarm() {
+      if (!enabled) return;
+      for (let i = 0; i < 4; i++) tone({ f: i % 2 ? 660 : 880, t0: i * 0.13, dur: 0.11, vol: 0.08, type: 'square', attack: 0.003, release: 0.04 });
+    },
     // 说话声：每个字一声很轻的“啵”
     say(ch) {
       if (!enabled || !voiceOn || /[\s，。！？…、～\-—.,!?~]/.test(ch)) return;

@@ -11,15 +11,28 @@
   // ---------- 存档 ----------
   const DEFAULTS = {
     scale: 1, opacity: 1, top: true, walk: true, gravity: true, sound: true, voice: true, hourly: true,
-    quiet: false, autoNight: false, night: false, launch: false, water: 45, sitRemind: 60, sleepAfter: 5, skin: 'classic',
+    quiet: false, autoNight: false, night: false, launch: false, water: 45, sitRemind: 60, sleepAfter: 5, skin: 'rinne',
     pomoWork: 25, pomoBreak: 5,
   };
   const S = {
     settings: { ...DEFAULTS }, affection: 0, todos: [], reminders: [], fortune: null, pomo: null,
     stats: { pats: 0, pokes: 0, throws: 0, songs: 0, feeds: 0, pomos: 0, rpsWin: 0, rpsLose: 0, rpsDraw: 0, retries: 0, first: Date.now(), lastDay: '' },
   };
-  // 台词：当前皮肤有专属台词就用专属的，否则沿用经典台词
-  const L = new Proxy({}, { get: (_, k) => (S.settings.skin === 'rinne' && window.LINES_RINNE[k]) || LINES[k] || [] });
+  // 角色与皮肤：一个角色可以有多套皮肤
+  const CHARAS = {
+    miku: { id: 'miku', name: 'Miku', full: '初音未来' },
+    kurumi: { id: 'kurumi', name: '久留美', full: '福贺久留美' },
+    furina: { id: 'furina', name: '芙宁娜', full: '芙宁娜' },
+  };
+  const SKIN_CHARA = { classic: 'miku', rinne: 'miku', kurumi: 'kurumi', furina: 'furina' };
+  const chara = () => CHARAS[SKIN_CHARA[S.settings.skin] || 'miku'];
+  const isKurumi = () => chara().id === 'kurumi';
+  const isFurina = () => chara().id === 'furina';
+  // 夜晚模式里坐在地上（久留美盯盘、芙宁娜谢幕后），不在空中飘
+  const nightGrounded = () => isKurumi() || isFurina();
+  // 台词：当前皮肤有专属台词就用专属的，否则沿用通用台词
+  const SKIN_LINES = { rinne: () => window.LINES_RINNE, kurumi: () => window.LINES_KURUMI, furina: () => window.LINES_FURINA };
+  const L = new Proxy({}, { get: (_, k) => { const x = SKIN_LINES[S.settings.skin]; return (x && x()[k]) || LINES[k] || []; } });
   let saveT = null;
   function save() {
     clearTimeout(saveT);
@@ -118,6 +131,35 @@
     } },
     glitchBlip: { dur: 0.4, pose(p, t) { p.glitch = 0.8 * bell(t / 0.4); } },
     nod: { dur: 1.1, pose(p, t) { p.sprite = 'happy'; p.sy = 1 - Math.max(0, Math.sin(t * 11)) * 0.02; } },
+    // 久留美
+    chart: { dur: 3.4, pose(p, t) { p.sprite = 'phone'; p.rot = Math.sin(t * 1.2) * 1; p.y = t > 2.3 && t < 2.6 ? -5 * bell((t - 2.3) / 0.3) : 0; } },
+    study: { dur: 3.6, pose(p, t) { p.sprite = 'study'; p.sy = 1 - Math.max(0, Math.sin(t * 2.2)) * 0.012; p.rot = Math.sin(t * 0.9) * 1.2; } },
+    buy: { dur: 1.9, fast: true, pose(p, t) { p.sprite = 'buy'; jumpPose(p, Math.min(t, 0.95), 34); p.sway = 0.03; } },
+    sell: { dur: 1.9, pose(p, t) { p.sprite = 'sell'; const k = t < 0.3 ? bell(t / 0.3) : 0; p.sy = 1 - 0.06 * k; p.sx = 1 + 0.04 * k; p.rot = -1.5; } },
+    profit: { dur: 2.8, fast: true, pose(p, t, a) {
+      p.sprite = 'profit'; jumpPose(p, ((t % 0.9) / 0.9) * 0.95, 20); p.sway = 0.03;
+      if (!a.fired) { a.fired = 1; for (let i = 0; i < 8; i++) setTimeout(() => fx('yen', 0.5 + rand(-0.45, 0.45), 0.1 + rand(-0.08, 0.2)), i * 90); }
+    } },
+    losscut: { dur: 3.4, pose(p, t) { p.sprite = 'losscut'; p.x = Math.sin(t * 30) * 2.5 * Math.max(0, 1 - t / 0.8); p.sy = 1 - 0.012 * Math.abs(Math.sin(t * 4)); } },
+    frenzy: { dur: 2.6, fast: true, pose(p, t) { p.sprite = 'frenzy'; p.x = Math.sin(t * 38) * 1.2; p.rot = Math.sin(t * 6) * 2; p.y = -Math.abs(Math.sin(t * 9)) * 3; p.sway = 0.03; } },
+    pray: { dur: 3, pose(p, t) { p.sprite = 'pray'; p.sy = 1 - 0.015 * Math.abs(Math.sin(t * 3)); p.rot = Math.sin(t * 2) * 1; } },
+    // 芙宁娜
+    bow: { dur: 2.4, pose(p, t) { p.sprite = 'bow'; const k = bell(clamp((t - 0.3) / 1.4, 0, 1)); p.rot = -3 * k; p.sy = 1 - 0.03 * k; p.pivot = 0.2; } },
+    salon: { dur: 3, pose(p, t, a) {
+      p.sprite = 'salon'; p.y = -Math.abs(Math.sin(t * 3)) * 4; p.rot = Math.sin(t * 2) * 1.5; p.sway = 0.03;
+      if (!a.fired) { a.fired = 1; for (let i = 0; i < 6; i++) setTimeout(() => fx('bubble', 0.5 + rand(-0.48, 0.48), 0.2 + rand(-0.1, 0.4)), i * 120); }
+    } },
+    rejoice: { dur: 2.6, fast: true, pose(p, t, a) {
+      p.sprite = 'cheer'; jumpPose(p, ((t % 0.9) / 0.9) * 0.95, 28); p.sway = 0.035;
+      if (!a.fired) { a.fired = 1; for (let i = 0; i < 10; i++) setTimeout(() => fx(i % 2 ? 'star' : 'confetti', 0.5 + rand(-0.5, 0.5), rand(-0.05, 0.3)), i * 80); }
+    } },
+    cry: { dur: 3, pose(p, t) { p.sprite = 'cry'; p.y = -Math.abs(Math.sin(t * 7)) * 2; p.rot = Math.sin(t * 13) * 1.2; } },
+    brave: { dur: 2.8, pose(p, t) { p.sprite = 'brave'; p.x = Math.sin(t * 46) * 0.9; p.sy = 1.01; } },
+    verdict: { dur: 2.2, fast: true, pose(p, t) { p.sprite = 'verdict'; const k = t < 0.35 ? bell(t / 0.35) : 0; p.x = 6 * k; p.sx = 1 + 0.03 * k; } },
+    rain: { dur: 5, pose(p, t, a) {
+      p.sprite = 'sad'; p.sy = 0.99; p.sway = 0.005;
+      a.dt = (a.dt || 0) + 1; if (a.dt % 9 === 0) fx('rain', 0.5 + rand(-0.6, 0.6), rand(-0.3, 0.1));
+    } },
   };
 
   // ---------- 状态（持续） ----------
@@ -147,6 +189,8 @@
     float: { pose(p, t) { nightPose(p, t); } },
   };
   function nightPose(p, t) {
+    // 久留美的夜晚是在电脑前熬夜盯盘，不飘
+    if (nightGrounded()) { p.sprite = 'night'; p.sy = 1 + 0.006 * Math.sin(t * 1.6); p.sway = 0.004; return; }
     p.sprite = 'night'; p.y = -14 + Math.sin(t * 1.3) * 7; p.rot = Math.sin(t * 0.7) * 2; p.pivot = 0.7; p.sway = 0.022;
   }
   function setMode(m) {
@@ -196,7 +240,7 @@
     b.classList.add('out');
     bubbleTimer = setTimeout(() => b.classList.add('hidden'), 300);
   }
-  const GLYPH = { heart: '♥︎', note: () => pick(['♪', '♫', '♬']), star: '✦', spark: '✧', z: 'z', bang: '!', q: '?', dots: '…' };
+  const GLYPH = { heart: '♥︎', note: () => pick(['♪', '♫', '♬']), star: '✦', spark: '✧', z: 'z', bang: '!', q: '?', dots: '…', yen: '¥', up: '▲', down: '▼', drop: '💧', bubble: '○', confetti: () => pick(['❖', '◆', '✦']), rain: '│' };
   // qx/qy：相对角色包围盒的位置（0..1）
   function fx(kind, qx, qy) {
     const p = Chara.at(qx, qy);
@@ -219,6 +263,7 @@
     badgeEl.classList.remove('hidden');
     badgeEl.textContent = text;
     badgeEl.classList.toggle('brk', phase === 'break');
+    badgeEl.dataset.phase = phase || '';
   }
 
   // ---------- 好感度 ----------
@@ -324,6 +369,32 @@
   }
   Chara.onFormSwap(() => { flash(); burst('star', 4); });
 
+  // ---------- 「FX战士久留美」主题 ----------
+  // FX 模拟盘（features.js）通过它让久留美做出反应
+  function fxReact(kind) {
+    if (['held', 'thrown', 'fall'].includes(mode)) return;
+    if (mode === 'sleep') wakeUp(true);
+    if (mode === 'walk') { api.send('stop-walk'); setMode(S.settings.night ? 'float' : 'idle'); }
+    if (mode === 'sit') setMode('idle');
+    lastActivity = now();
+    const R = {
+      buy: ['buy', L.buy, () => { Snd.pop(); burst('up', 3); }],
+      sell: ['sell', L.sell, () => { Snd.pop(); burst('down', 3); }],
+      profit: ['profit', L.profit, () => Snd.coin()],
+      loss: ['sad', L.loss, () => Snd.sad()],
+      losscut: ['losscut', L.losscut, () => { Snd.alarm(); burst('drop', 3); }],
+      hot: ['cheer', L.fxHot, () => burst('up', 2)],
+      cold: ['pray', L.fxCold, () => burst('drop', 1)],
+      news: ['surprised', L.fxNews, () => { Snd.boing(); fx('bang', 0.72, 0.08); }],
+      frenzy: ['frenzy', L.frenzy, () => burst('yen', 3)],
+      lev: ['think', L.fxLev, () => {}],
+      reset: ['study', L.fxReset, () => {}],
+      goal: ['cheer', L.fxGoal, () => { Snd.fanfare(); burst('yen', 6); burst('star', 4); }],
+    }[kind];
+    if (!R) return;
+    stopAction(); play(R[0]); say(pick(R[1]), { dur: 3.2 }); R[2]();
+  }
+
   const ACT_FN = {
     transform: () => transform(),
     untransform: () => untransform(),
@@ -339,6 +410,16 @@
     sit: () => sit(),
     sleep: () => goSleep(),
     drink: () => { play('drink'); say(pick(L.drink)); addAff(1, 'drink'); },
+    chart: () => { play('chart'); say(pick(L.chart)); },
+    study: () => { play('study'); say(pick(L.study)); addAff(1, 'study'); },
+    pray: () => { play('pray'); say(pick(L.pray)); },
+    frenzy: () => { play('frenzy'); Snd.boing(); burst('yen', 3); say(pick(L.frenzy)); },
+    bow: () => { play('bow'); Snd.fanfare(); setTimeout(() => burst('heart', 3), 900); say(pick(L.bow)); addAff(1, 'bow'); },
+    salon: () => { play('salon'); Snd.sparkle(); say(pick(L.salon)); },
+    rejoice: () => { play('rejoice'); Snd.fanfare(); say(pick(L.rejoice)); },
+    brave: () => { play('brave'); say(pick(L.brave)); },
+    cry: () => { play('cry'); Snd.sad(); burst('drop', 2); say(pick(L.cry)); },
+    verdict: () => { play('verdict'); Snd.boing(); say(pick(L.verdict)); },
   };
   function doAct(id) {
     if (mode === 'held' || mode === 'thrown' || mode === 'fall') return;
@@ -356,6 +437,7 @@
     if (on) {
       if (mode === 'walk') api.send('stop-walk');
       if (['idle', 'sit', 'walk', 'sleep'].includes(mode)) setMode('float');
+      if (nightGrounded() && S.settings.gravity) api.send('fall');
       if (announce) { say(pick(L.night)); burst('star', 3); Snd.sparkle(); }
     } else {
       if (mode === 'float') setMode('idle');
@@ -424,7 +506,7 @@
     if (!down) return;
     const d = down;
     down = null;
-    if (d.moved) api.send('drag-end', { gravity: S.settings.gravity && !S.settings.night });
+    if (d.moved) api.send('drag-end', { gravity: S.settings.gravity && !(S.settings.night && !nightGrounded()) });
     else onClick(d.h);
   });
   document.addEventListener('dblclick', (e) => {
@@ -436,7 +518,7 @@
     e.preventDefault();
     const h = hitTest(e.clientX, e.clientY);
     if (h && !h.ui) {
-      api.send('menu-state', { pomo: Feat.pomoLabel(), form: Chara.form });
+      api.send('menu-state', { pomo: Feat.pomoLabel(), fx: Feat.fxLabel(), form: Chara.form });
       api.send('popup');
     }
   });
@@ -503,6 +585,8 @@
     const shaken = shake > 60;
     setMode(S.settings.night ? 'float' : 'idle');
     if (d.hard && rinne()) { Snd.thud(); play('land', { then: () => retry(true) }); }
+    else if (d.hard && isFurina()) { Snd.thud(); play('land', { then: () => play('cry', { then: 'brave' }) }); say(pick(L.hardLand), { dur: 3.5 }); }
+    else if (d.hard && isKurumi()) { Snd.thud(); play('land', { then: () => { play('losscut'); Snd.alarm(); } }); say(pick(L.forcedLosscut), { dur: 3.5 }); }
     else if (d.hard) { Snd.thud(); play('land', { then: 'dizzy' }); say(pick(L.dizzy), { dur: 3.5 }); }
     else if (shaken) { play('dizzy'); say(pick(L.dizzy)); }
     else if (!d.stay) { play('softLand'); if (Math.random() < 0.4) say(pick(L.land)); }
@@ -586,8 +670,13 @@
     const near = cursorInfo().dist < 220 * sc;
     const canWalk = S.settings.walk && !Feat.isOpen() && !Feat.focusing();
     let opts;
-    if (mode === 'sit') opts = [['hum', 1], ['chat', 1.5], ['nothing', 2]];
-    else if (mode === 'float') opts = [['chatNight', 1], ['hum', 1], ['walk', canWalk ? 1.6 : 0], ['nothing', 1.5]];
+    const K = isKurumi(), holding = K && Feat.fxHolding();
+    if (mode === 'sit') opts = [[K ? 'chat' : 'hum', 1], ['chat', 1.5], ['nothing', 2]];
+    else if (mode === 'float') opts = nightGrounded() ? [['chatNight', 1.5], ['hum', isFurina() ? 0.6 : 0], ['nothing', 2]] : [['chatNight', 1], ['hum', 1], ['walk', canWalk ? 1.6 : 0], ['nothing', 1.5]];
+    else if (isFurina()) opts = [['walk', canWalk ? 3 : 0], ['lookAround', 1.5], ['chat', 2], ['hum', 1.2], ['bow', 0.5], ['salon', 0.35], ['brave', 0.2],
+      ['rain', 0.08], ['stretch', 1], ['tilt', 0.8], ['sit', 0.8], ['wave', near ? 1.5 : 0], ['dance', 0.25], ['spin', 0.4], ['think', 0.6], ['nothing', 1.5]];
+    else if (K) opts = [['walk', canWalk && !holding ? 3 : 0], ['lookAround', 1.5], ['chat', 2], ['chart', holding ? 3 : 1.4], ['study', 0.7], ['stretch', 1],
+      ['tilt', 0.8], ['sit', 0.8], ['wave', near ? 1.5 : 0], ['pray', holding ? 0.6 : 0.12], ['frenzy', holding ? 0.4 : 0.08], ['spin', 0.2], ['think', 0.6], ['nothing', 1.5]];
     else opts = [['walk', canWalk ? 3 : 0], ['lookAround', 2], ['chat', 2], ['hum', 1.2], ['stretch', 1], ['tilt', 1],
       ['sit', 0.8], ['wave', near ? 1.5 : 0], ['dance', 0.25], ['leek', 0.2], ['spin', 0.3], ['think', 0.6], ['nothing', 1.5]];
     if (rinne() && mode === 'idle') opts.push(['magic', 0.6], ['glitchBlip', 0.5], ['transform', Chara.form === 'u' ? 0.25 : 0]);
@@ -606,6 +695,7 @@
     else if (c === 'spin') play('spin');
     else if (c === 'magic') { play('magic'); say(pick(L.magic), { chatter: true }); }
     else if (c === 'transform') { if (!Feat.focusing() && !S.settings.quiet) transform(); }
+    else if (['chart', 'study', 'pray', 'frenzy', 'bow', 'salon', 'brave', 'rain'].includes(c)) { play(c); if (Math.random() < 0.5) say(pick(L[c]), { chatter: true }); }
     else if (c !== 'nothing') play(c);
   }
 
@@ -655,14 +745,18 @@
   }
 
   // ---------- 每秒 ----------
+  function skinClass() {
+    ['classic', 'rinne', 'kurumi', 'furina'].forEach((k) => document.body.classList.toggle('skin-' + k, S.settings.skin === k));
+  }
   async function applySkin(announce) {
     const name = S.settings.skin;
     await Chara.setSkin(name);
     Chara.setForm('u');
     transformUntil = 0;
-    document.body.classList.toggle('skin-rinne', name === 'rinne');
+    skinClass();
     makeTrayIcon();
-    if (announce) { flash(); burst('star', 4); Snd.sparkle(); play('wave'); say(pick(name === 'rinne' ? L.skin : LINES.skinClassic)); }
+    if (S.settings.night) setNight(true, false);
+    if (announce) { flash(); burst('star', 4); Snd.sparkle(); play('wave'); say(pick(name === 'classic' ? LINES.skinClassic : L.skin)); }
   }
 
   let lastNightCheck = 0;
@@ -705,7 +799,7 @@
     }
     Chara.mount($('#pet'));
     await Chara.setSkin(S.settings.skin);
-    document.body.classList.toggle('skin-rinne', S.settings.skin === 'rinne');
+    skinClass();
     buildStars();
     Feat.init(M);
     applySettings();
@@ -717,7 +811,7 @@
         const first = !S.stats.lastDay;
         S.stats.lastDay = today();
         addAff(3);
-        say(first ? '初次见面！我是初音未来～以后请多关照！' : greeting(), { dur: 4.5 });
+        say(first ? pick(L.hello) : greeting(), { dur: first ? 6 : 4.5 });
       } else say(greeting());
       play('wave');
       save();
@@ -727,7 +821,7 @@
   }
 
   const M = {
-    L, transform, retry,
+    L, transform, retry, fxReact, chara,
     S, say, play, save, fx: burst, addAff, setBadge, doAct, set: setSetting,
     walk: (d = 1) => { stopAction(); walkDir = d; api.send('walk', { dx: d * 300 * sc, speed: 1.1 * sc }); setMode('walk'); },
     wake: () => wakeUp(true),
@@ -735,7 +829,7 @@
     busy: () => ['held', 'thrown', 'fall'].includes(mode) || !!(action && action.def.music),
     notify: (title, body) => api.send('notify', { title, body }),
   };
-  window.__miku = M;
+  window.__pet = M;
 
   // 浏览器预览用的假主进程
   function mockApi() {
@@ -749,9 +843,9 @@
         if (ch === 'drag-end') setTimeout(() => h.landed && h.landed({ hard: false }), 50);
         if (ch === 'walk') setTimeout(() => h['walk-end'] && h['walk-end'](), 2500);
         if (ch === 'rewind') setTimeout(() => h.rewound && h.rewound(), 600);
-        if (ch === 'save') { try { localStorage.setItem('miku', JSON.stringify(d)); } catch {} }
+        if (ch === 'save') { try { localStorage.setItem('deskpet', JSON.stringify(d)); } catch {} }
       },
-      invoke: async () => { try { return JSON.parse(localStorage.getItem('miku')); } catch { return null; } },
+      invoke: async () => { try { return JSON.parse(localStorage.getItem('deskpet')); } catch { return null; } },
       on(ch, fn) { h[ch] = fn; },
     };
   }
